@@ -1,0 +1,23 @@
+meta {
+  name: Create Payable
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/payments
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "orderId": 1,
+    "supplierId": 1,
+    "amount": 5000
+  }
+}

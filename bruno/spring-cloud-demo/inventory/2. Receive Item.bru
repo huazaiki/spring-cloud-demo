@@ -1,0 +1,23 @@
+meta {
+  name: Receive Item
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/inventory/receive
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "orderId": 1,
+    "itemId": 1,
+    "quantity": 100
+  }
+}

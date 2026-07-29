@@ -1,0 +1,21 @@
+meta {
+  name: Disqualify Supplier
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/v1/suppliers/{{supplierId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "status": "DISQUALIFIED"
+  }
+}
