@@ -1,0 +1,537 @@
+openapi: "3.0.3"
+info:
+  title: Spring Cloud Demo — Procure-to-Pay
+  description: |
+    供应链采购-入库-付款微服务 API。
+
+    **认证流程**：先调 `/api/v1/auth/register` 注册，再 `/api/v1/auth/login` 获取 token，
+    其余接口在 `Authorization: Bearer <token>` 头中携带。
+  version: "0.0.1"
+  contact:
+    name: huazaiki
+
+servers:
+  - url: http://localhost:8080
+    description: Gateway 统一入口
+
+tags:
+  - name: Auth
+    description: 用户注册与登录
+  - name: Supplier
+    description: 供应商主数据管理
+  - name: Purchase
+    description: 采购订单
+  - name: Inventory
+    description: 物料与库存
+  - name: Payment
+    description: 应付账款
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+
+    RegisterRequest:
+      type: object
+      required: [username, password, role]
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          format: password
+          example: pass123
+        role:
+          type: string
+          enum: [PURCHASER, WAREHOUSE, FINANCE, ADMIN]
+          example: ADMIN
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          format: password
+          example: pass123
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiJ9...
+
+    Supplier:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        creditCode:
+          type: string
+        contactName:
+          type: string
+        contactPhone:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, DISQUALIFIED]
+        createTime:
+          type: string
+          format: date-time
+        updateTime:
+          type: string
+          format: date-time
+
+    SupplierCreateRequest:
+      type: object
+      required: [name, creditCode, contactName, contactPhone]
+      properties:
+        name:
+          type: string
+          example: Acme Corp
+        creditCode:
+          type: string
+          example: "91110000MA001"
+        contactName:
+          type: string
+          example: John Doe
+        contactPhone:
+          type: string
+          example: "13800001111"
+
+    PurchaseOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        orderNo:
+          type: string
+          example: PO-20260729-A1B2C3
+        supplierId:
+          type: integer
+          format: int64
+        totalAmount:
+          type: number
+        status:
+          type: string
+          enum: [DRAFT, APPROVED, SHIPPED, RECEIVED, SETTLED, CANCELLED]
+        createTime:
+          type: string
+          format: date-time
+
+    OrderCreateRequest:
+      type: object
+      required: [supplierId, items]
+      properties:
+        supplierId:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemLine"
+
+    OrderItemLine:
+      type: object
+      properties:
+        itemId:
+          type: integer
+          format: int64
+        itemName:
+          type: string
+        quantity:
+          type: number
+        unitPrice:
+          type: number
+        amount:
+          type: number
+
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        spec:
+          type: string
+        unit:
+          type: string
+        sku:
+          type: string
+
+    ItemCreateRequest:
+      type: object
+      required: [name, spec, unit, sku]
+      properties:
+        name:
+          type: string
+          example: Steel Rod
+        spec:
+          type: string
+          example: 10mm x 6m
+        unit:
+          type: string
+          example: pcs
+        sku:
+          type: string
+          example: SR-10-6M
+
+    ReceiveRequest:
+      type: object
+      required: [orderId, itemId, quantity]
+      properties:
+        orderId:
+          type: integer
+          format: int64
+        itemId:
+          type: integer
+          format: int64
+        quantity:
+          type: number
+
+    ReserveRequest:
+      type: object
+      required: [itemId, quantity]
+      properties:
+        itemId:
+          type: integer
+          format: int64
+        quantity:
+          type: number
+
+    Payable:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        orderId:
+          type: integer
+          format: int64
+        supplierId:
+          type: integer
+          format: int64
+        amount:
+          type: number
+        dueDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [PENDING, APPROVED, SETTLED]
+        createTime:
+          type: string
+          format: date-time
+
+    PayableCreateRequest:
+      type: object
+      required: [orderId, supplierId, amount]
+      properties:
+        orderId:
+          type: integer
+          format: int64
+        supplierId:
+          type: integer
+          format: int64
+        amount:
+          type: number
+          example: 5000
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ==================== Auth ====================
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: 用户注册
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "200":
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          description: 用户名已存在
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: 用户登录
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: 登录成功，返回 JWT
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: 用户名或密码错误
+
+  # ==================== Supplier ====================
+  /api/v1/suppliers:
+    post:
+      tags: [Supplier]
+      summary: 创建供应商
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierCreateRequest"
+      responses:
+        "200":
+          description: 创建成功
+    get:
+      tags: [Supplier]
+      summary: 供应商列表
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: name
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: 分页列表
+
+  /api/v1/suppliers/{id}:
+    get:
+      tags: [Supplier]
+      summary: 获取供应商详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: 供应商信息
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Supplier"
+        "404":
+          description: 不存在
+
+  /api/v1/suppliers/{id}/status:
+    put:
+      tags: [Supplier]
+      summary: 修改供应商状态
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [ACTIVE, INACTIVE, DISQUALIFIED]
+      responses:
+        "200":
+          description: 修改成功
+
+  # ==================== Purchase ====================
+  /api/v1/orders:
+    post:
+      tags: [Purchase]
+      summary: 创建采购订单 (DRAFT)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderCreateRequest"
+      responses:
+        "200":
+          description: 订单创建成功
+
+  /api/v1/orders/{id}:
+    get:
+      tags: [Purchase]
+      summary: 获取订单详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: 订单信息
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PurchaseOrder"
+
+  /api/v1/orders/{id}/approve:
+    put:
+      tags: [Purchase]
+      summary: 审批订单 (DRAFT → APPROVED)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: 审批成功
+        "400":
+          description: 仅 DRAFT 状态订单可审批
+
+  # ==================== Inventory ====================
+  /api/v1/inventory/items:
+    post:
+      tags: [Inventory]
+      summary: 创建物料
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemCreateRequest"
+      responses:
+        "200":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Item"
+
+  /api/v1/inventory/receive:
+    post:
+      tags: [Inventory]
+      summary: 入库操作
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReceiveRequest"
+      responses:
+        "200":
+          description: 入库成功
+
+  /api/v1/inventory/reserve:
+    post:
+      tags: [Inventory]
+      summary: 库存预留
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReserveRequest"
+      responses:
+        "200":
+          description: 预留成功
+        "400":
+          description: 库存不足
+
+  # ==================== Payment ====================
+  /api/v1/payments:
+    post:
+      tags: [Payment]
+      summary: 创建应付账款 (PENDING)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayableCreateRequest"
+      responses:
+        "200":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Payable"
+
+  /api/v1/payments/{id}/approve:
+    put:
+      tags: [Payment]
+      summary: 审批付款 (PENDING → APPROVED)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: 审批成功
+        "400":
+          description: 仅 PENDING 状态可审批

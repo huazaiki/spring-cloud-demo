@@ -104,7 +104,7 @@ curl -X POST http://localhost:8080/api/v1/auth/login \
 
 ### 5. API 调试
 
-导入 `bruno/spring-cloud-demo/` 到 [Bruno](https://www.usebruno.com/)。
+导入 `openapi.yml` 到 Postman / Insomnia / Swagger Editor 等工具。
 
 ## 运行测试
 
