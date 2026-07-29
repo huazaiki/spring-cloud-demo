@@ -22,7 +22,7 @@
         <module>common</module>
         <module>auth-service</module>
         <!-- TODO: add as each service is developed -->
-        <!-- <module>supplier-service</module> -->
+        <module>supplier-service</module>
         <!-- <module>purchase-service</module> -->
         <!-- <module>inventory-service</module> -->
         <!-- <module>payment-service</module> -->
