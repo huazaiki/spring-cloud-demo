@@ -1,3 +1,5 @@
+.env
+
 # Maven
 .m2/
 target/
