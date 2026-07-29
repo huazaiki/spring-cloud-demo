@@ -21,7 +21,7 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
   config:
-    import: optional:nacos:
+    import: "optional:nacos:"
 
 mybatis-plus:
   global-config:

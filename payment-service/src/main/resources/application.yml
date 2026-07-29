@@ -24,7 +24,7 @@ spring:
         spring.json.trusted.packages: "*"
 
   config:
-    import: optional:nacos:
+    import: "optional:nacos:"
 
 mybatis-plus:
   global-config:

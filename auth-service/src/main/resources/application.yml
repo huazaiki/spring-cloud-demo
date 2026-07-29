@@ -23,7 +23,7 @@ spring:
             group: DEFAULT_GROUP
 
   config:
-    import: optional:nacos:
+    import: "optional:nacos:"
 
 mybatis-plus:
   global-config:

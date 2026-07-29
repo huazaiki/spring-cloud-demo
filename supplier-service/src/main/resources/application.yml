@@ -20,7 +20,7 @@ spring:
         file-extension: yml
 
   config:
-    import: optional:nacos:
+    import: "optional:nacos:"
 
 mybatis-plus:
   global-config:
