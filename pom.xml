@@ -24,7 +24,7 @@
         <!-- TODO: add as each service is developed -->
         <module>supplier-service</module>
         <module>purchase-service</module>
-        <!-- <module>inventory-service</module> -->
+        <module>inventory-service</module>
         <!-- <module>payment-service</module> -->
         <!-- <module>gateway-service</module> -->
     </modules>
