@@ -4,6 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.0</version>
+        <relativePath/>
+    </parent>
+
     <groupId>com.huazaiki</groupId>
     <artifactId>spring-cloud-demo</artifactId>
     <version>0.0.1-SNAPSHOT</version>
@@ -13,8 +20,8 @@
 
     <modules>
         <module>common</module>
+        <module>auth-service</module>
         <!-- TODO: add as each service is developed -->
-        <!-- <module>auth-service</module> -->
         <!-- <module>supplier-service</module> -->
         <!-- <module>purchase-service</module> -->
         <!-- <module>inventory-service</module> -->
@@ -24,7 +31,6 @@
 
     <properties>
         <java.version>17</java.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-cloud.version>2025.0.0</spring-cloud.version>
         <spring-cloud-alibaba.version>2025.0.0.0</spring-cloud-alibaba.version>
         <mybatis-plus.version>3.5.9</mybatis-plus.version>
@@ -32,7 +38,6 @@
         <jjwt.version>0.12.6</jjwt.version>
         <seata.version>2.2.0</seata.version>
         <testcontainers.version>1.20.4</testcontainers.version>
-        <junit.version>5.11.4</junit.version>
     </properties>
 
     <dependencyManagement>
@@ -98,28 +103,10 @@
             </dependency>
 
             <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
                 <groupId>com.huazaiki</groupId>
                 <artifactId>common</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-maven-plugin</artifactId>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
 </project>

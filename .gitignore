@@ -22,3 +22,5 @@ data/
 
 # Scratch (local issue tracker)
 .scratch/
+
+# Maven local repo.m2/
