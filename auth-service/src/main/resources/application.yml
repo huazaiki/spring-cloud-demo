@@ -22,6 +22,9 @@ spring:
           - data-id: common-config.yml
             group: DEFAULT_GROUP
 
+  config:
+    import: optional:nacos:
+
 mybatis-plus:
   global-config:
     db-config:

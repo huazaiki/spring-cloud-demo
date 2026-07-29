@@ -19,6 +19,9 @@ spring:
         namespace: dev
         file-extension: yml
 
+  config:
+    import: optional:nacos:
+
 mybatis-plus:
   global-config:
     db-config:

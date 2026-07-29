@@ -80,12 +80,12 @@ docker compose up -d
 mvn clean package -DskipTests
 
 # 按顺序启动（每个终端一个）
-mvn -pl auth-service spring-boot:run
-mvn -pl supplier-service spring-boot:run
-mvn -pl inventory-service spring-boot:run
-mvn -pl payment-service spring-boot:run
-mvn -pl purchase-service spring-boot:run
-mvn -pl gateway-service spring-boot:run
+mvn -pl auth-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
+mvn -pl supplier-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
+mvn -pl inventory-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
+mvn -pl payment-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
+mvn -pl purchase-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
+mvn -pl gateway-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
 ```
 
 ### 4. 验证
