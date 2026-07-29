@@ -17,6 +17,8 @@ spring:
       config:
         server-addr: localhost:8848
         namespace: dev
+        import-check:
+          enabled: false
         file-extension: yml
 
 mybatis-plus:

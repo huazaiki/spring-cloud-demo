@@ -14,6 +14,9 @@ spring:
       discovery:
         server-addr: localhost:8848
         namespace: dev
+      config:
+        import-check:
+          enabled: false
     openfeign:
       client:
         config:
