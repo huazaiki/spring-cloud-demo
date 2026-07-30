@@ -6,12 +6,12 @@ import { listSuppliers } from '../api/supplier';
 
 const { Title } = Typography;
 
-interface Order { id: number; orderNo: string; supplierId: number; totalAmount: number; status: string; createTime: string; }
-interface Supplier { id: number; name: string; }
+interface Order { id: string; orderNo: string; supplierId: string; totalAmount: number; status: string; createTime: string; }
+interface Supplier { id: string; name: string; }
 
 const statusColor: Record<string, string> = { DRAFT: 'default', APPROVED: 'blue', SHIPPED: 'cyan', RECEIVED: 'green', SETTLED: 'purple', CANCELLED: 'red' };
 const statusLabel: Record<string, string> = { DRAFT: '草稿', APPROVED: '已审批', SHIPPED: '已发货', RECEIVED: '已入库', SETTLED: '已结清', CANCELLED: '已取消' };
-const fmtMoney = (v: number) => v != null ? ('¥' + v.toFixed(2)) : '-';
+const fmtMoney = (v: number) => v != null ? ('¥' + Number(v).toFixed(2)) : '-';
 
 export default function OrderList() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -20,7 +20,7 @@ export default function OrderList() {
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [approvingId, setApprovingId] = useState<number | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -45,10 +45,10 @@ export default function OrderList() {
   const handleCreate = async (values: Record<string, unknown>) => {
     setSubmitting(true);
     try {
-      const items = ((values as { items?: Array<{ itemId: number; itemName: string; quantity: number; unitPrice: number }> }).items || []).map((it) => ({
-        ...it, amount: it.quantity * it.unitPrice,
+      const items = ((values as { items?: Array<{ itemId: string; itemName: string; quantity: number; unitPrice: number }> }).items || []).map((it) => ({
+        itemId: Number(it.itemId), itemName: it.itemName, quantity: it.quantity, unitPrice: it.unitPrice, amount: it.quantity * it.unitPrice,
       }));
-      await createOrder({ supplierId: (values as { supplierId: number }).supplierId, items });
+      await createOrder({ supplierId: Number((values as { supplierId: string }).supplierId), items });
       message.success('订单创建成功');
       setModalOpen(false); form.resetFields();
       fetchOrders();
@@ -58,10 +58,10 @@ export default function OrderList() {
     } finally { setSubmitting(false); }
   };
 
-  const handleApprove = async (id: number) => {
+  const handleApprove = async (id: string) => {
     setApprovingId(id);
     try {
-      await approveOrder(id);
+      await approveOrder(Number(id));
       message.success('审批成功');
       fetchOrders();
     } catch (err: unknown) {
@@ -71,9 +71,9 @@ export default function OrderList() {
   };
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', width: 60 },
+    { title: 'ID', dataIndex: 'id', width: 80, ellipsis: true },
     { title: '订单号', dataIndex: 'orderNo' },
-    { title: '供应商 ID', dataIndex: 'supplierId', width: 90 },
+    { title: '供应商 ID', dataIndex: 'supplierId', width: 100, ellipsis: true },
     { title: '金额', dataIndex: 'totalAmount', width: 100, render: fmtMoney },
     { title: '状态', dataIndex: 'status', width: 100, render: (s: string) => <Tag color={statusColor[s]}>{statusLabel[s] || s}</Tag> },
     { title: '创建时间', dataIndex: 'createTime', width: 180 },
@@ -106,7 +106,7 @@ export default function OrderList() {
                 {fields.map(({ key, name, ...rest }) => (
                   <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
                     <Form.Item {...rest} name={[name, 'itemId']} rules={[{ required: true, message: '物料ID' }]}>
-                      <InputNumber placeholder="物料ID" min={1} />
+                      <Input placeholder="物料ID" />
                     </Form.Item>
                     <Form.Item {...rest} name={[name, 'itemName']} rules={[{ required: true, message: '物料名' }]}>
                       <Input placeholder="物料名称" />

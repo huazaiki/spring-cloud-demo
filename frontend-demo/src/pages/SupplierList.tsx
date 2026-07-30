@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Space, Tag, message, Typography } from 'antd';
+import { Table, Button, Modal, Form, Input, InputNumber, Space, message, Typography, Tag, Select } from 'antd';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { listSuppliers, createSupplier, updateSupplierStatus } from '../api/supplier';
 
 const { Title } = Typography;
 
 interface Supplier {
-  id: number; name: string; creditCode: string; contactName: string; contactPhone: string;
+  id: string; name: string; creditCode: string; contactName: string; contactPhone: string;
   status: string; createTime: string; updateTime: string;
 }
 
@@ -19,7 +19,7 @@ export default function SupplierList() {
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
-  const [statusModal, setStatusModal] = useState<{ id: number; current: string } | null>(null);
+  const [statusModal, setStatusModal] = useState<{ id: string; current: string } | null>(null);
   const [statusSubmitting, setStatusSubmitting] = useState(false);
   const [statusForm] = Form.useForm();
 
@@ -51,7 +51,7 @@ export default function SupplierList() {
     if (!statusModal) return;
     setStatusSubmitting(true);
     try {
-      await updateSupplierStatus(statusModal.id, values.status);
+      await updateSupplierStatus(Number(statusModal.id), values.status);
       message.success('状态修改成功');
       setStatusModal(null); fetch();
     } catch {
@@ -60,7 +60,7 @@ export default function SupplierList() {
   };
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', width: 60 },
+    { title: 'ID', dataIndex: 'id', width: 80, ellipsis: true },
     { title: '名称', dataIndex: 'name' },
     { title: '统一社会信用代码', dataIndex: 'creditCode' },
     { title: '联系人', dataIndex: 'contactName' },

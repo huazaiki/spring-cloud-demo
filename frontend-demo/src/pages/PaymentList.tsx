@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, InputNumber, Space, Tag, message, Typography, Select } from 'antd';
+import { Table, Button, Modal, Form, Input, InputNumber, Space, Tag, message, Typography, Select } from 'antd';
 import { PlusOutlined, ReloadOutlined, CheckOutlined } from '@ant-design/icons';
 import { listPayables, createPayable, approvePayable } from '../api/payment';
 import { listSuppliers } from '../api/supplier';
 
 const { Title } = Typography;
 
-interface Payable { id: number; orderId: number; supplierId: number; amount: number; dueDate: string; status: string; createTime: string; }
-interface Supplier { id: number; name: string; }
+interface Payable { id: string; orderId: string; supplierId: string; amount: number; dueDate: string; status: string; createTime: string; }
+interface Supplier { id: string; name: string; }
 
 const statusColor: Record<string, string> = { PENDING: 'orange', APPROVED: 'blue', SETTLED: 'green' };
 const statusLabel: Record<string, string> = { PENDING: '待审批', APPROVED: '已审批', SETTLED: '已结清' };
-const fmtMoney = (v: number) => v != null ? ('¥' + v.toFixed(2)) : '-';
+const fmtMoney = (v: number) => v != null ? ('¥' + Number(v).toFixed(2)) : '-';
 
 export default function PaymentList() {
   const [payables, setPayables] = useState<Payable[]>([]);
@@ -20,7 +20,7 @@ export default function PaymentList() {
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [approvingId, setApprovingId] = useState<number | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const fetchPayables = async () => {
     setLoading(true);
@@ -45,7 +45,11 @@ export default function PaymentList() {
   const handleCreate = async (values: Record<string, unknown>) => {
     setSubmitting(true);
     try {
-      await createPayable(values as { orderId: number; supplierId: number; amount: number });
+      await createPayable({
+        orderId: Number((values as { orderId: string }).orderId),
+        supplierId: Number((values as { supplierId: string }).supplierId),
+        amount: Number((values as { amount: number }).amount),
+      });
       message.success('应付账款创建成功');
       setModalOpen(false); form.resetFields();
       fetchPayables();
@@ -55,10 +59,10 @@ export default function PaymentList() {
     } finally { setSubmitting(false); }
   };
 
-  const handleApprove = async (id: number) => {
+  const handleApprove = async (id: string) => {
     setApprovingId(id);
     try {
-      await approvePayable(id);
+      await approvePayable(Number(id));
       message.success('审批成功');
       fetchPayables();
     } catch (err: unknown) {
@@ -68,9 +72,9 @@ export default function PaymentList() {
   };
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', width: 60 },
-    { title: '订单 ID', dataIndex: 'orderId', width: 80 },
-    { title: '供应商 ID', dataIndex: 'supplierId', width: 90 },
+    { title: 'ID', dataIndex: 'id', width: 80, ellipsis: true },
+    { title: '订单 ID', dataIndex: 'orderId', width: 100, ellipsis: true },
+    { title: '供应商 ID', dataIndex: 'supplierId', width: 100, ellipsis: true },
     { title: '金额', dataIndex: 'amount', width: 120, render: fmtMoney },
     { title: '账期', dataIndex: 'dueDate', width: 120 },
     { title: '状态', dataIndex: 'status', width: 100, render: (s: string) => <Tag color={statusColor[s]}>{statusLabel[s] || s}</Tag> },
@@ -95,7 +99,7 @@ export default function PaymentList() {
         onCancel={() => { setModalOpen(false); form.resetFields(); }} footer={null}>
         <Form form={form} layout="vertical" onFinish={handleCreate}>
           <Form.Item name="orderId" label="采购订单 ID" rules={[{ required: true }]}>
-            <InputNumber style={{ width: '100%' }} min={1} />
+            <Input placeholder="输入订单 ID" />
           </Form.Item>
           <Form.Item name="supplierId" label="供应商" rules={[{ required: true }]}>
             <Select showSearch placeholder="选择供应商" filterOption={(input, option) => (option?.label as string || '').includes(input)}

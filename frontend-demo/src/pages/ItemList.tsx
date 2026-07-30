@@ -5,7 +5,7 @@ import { listItems, createItem, receiveItem, reserveItem } from '../api/inventor
 
 const { Title } = Typography;
 
-interface Item { id: number; name: string; spec: string; unit: string; sku: string; }
+interface Item { id: string; name: string; spec: string; unit: string; sku: string; }
 
 export default function ItemList() {
   const [items, setItems] = useState<Item[]>([]);
@@ -48,7 +48,11 @@ export default function ItemList() {
   const handleReceive = async (values: Record<string, unknown>) => {
     setReceiveSubmitting(true);
     try {
-      await receiveItem(values as { orderId: number; itemId: number; quantity: number });
+      await receiveItem({
+        orderId: Number((values as { orderId: string }).orderId),
+        itemId: Number((values as { itemId: string }).itemId),
+        quantity: Number((values as { quantity: number }).quantity),
+      });
       message.success('入库成功');
       setReceiveOpen(false); receiveForm.resetFields();
     } catch (err: unknown) {
@@ -60,7 +64,10 @@ export default function ItemList() {
   const handleReserve = async (values: Record<string, unknown>) => {
     setReserveSubmitting(true);
     try {
-      await reserveItem(values as { itemId: number; quantity: number });
+      await reserveItem({
+        itemId: Number((values as { itemId: string }).itemId),
+        quantity: Number((values as { quantity: number }).quantity),
+      });
       message.success('库存预留成功');
       setReserveOpen(false); reserveForm.resetFields();
     } catch (err: unknown) {
@@ -70,7 +77,7 @@ export default function ItemList() {
   };
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', width: 60 },
+    { title: 'ID', dataIndex: 'id', width: 80, ellipsis: true },
     { title: '名称', dataIndex: 'name' },
     { title: '规格', dataIndex: 'spec' },
     { title: '单位', dataIndex: 'unit', width: 80 },
@@ -100,15 +107,15 @@ export default function ItemList() {
       </Modal>
       <Modal title="入库收货" open={receiveOpen} onCancel={() => { setReceiveOpen(false); receiveForm.resetFields(); }} footer={null}>
         <Form form={receiveForm} layout="vertical" onFinish={handleReceive}>
-          <Form.Item name="orderId" label="采购订单 ID" rules={[{ required: true }]}><InputNumber style={{ width: '100%' }} min={1} /></Form.Item>
-          <Form.Item name="itemId" label="物料 ID" rules={[{ required: true }]}><InputNumber style={{ width: '100%' }} min={1} /></Form.Item>
+          <Form.Item name="orderId" label="采购订单 ID" rules={[{ required: true }]}><Input placeholder="输入订单 ID" /></Form.Item>
+          <Form.Item name="itemId" label="物料 ID" rules={[{ required: true }]}><Input placeholder="输入物料 ID" /></Form.Item>
           <Form.Item name="quantity" label="入库数量" rules={[{ required: true }]}><InputNumber style={{ width: '100%' }} min={1} /></Form.Item>
           <Form.Item><Button type="primary" htmlType="submit" loading={receiveSubmitting} block>确认入库</Button></Form.Item>
         </Form>
       </Modal>
       <Modal title="库存预留" open={reserveOpen} onCancel={() => { setReserveOpen(false); reserveForm.resetFields(); }} footer={null}>
         <Form form={reserveForm} layout="vertical" onFinish={handleReserve}>
-          <Form.Item name="itemId" label="物料 ID" rules={[{ required: true }]}><InputNumber style={{ width: '100%' }} min={1} /></Form.Item>
+          <Form.Item name="itemId" label="物料 ID" rules={[{ required: true }]}><Input placeholder="输入物料 ID" /></Form.Item>
           <Form.Item name="quantity" label="预留数量" rules={[{ required: true }]}><InputNumber style={{ width: '100%' }} min={1} /></Form.Item>
           <Form.Item><Button type="primary" htmlType="submit" loading={reserveSubmitting} block>确认预留</Button></Form.Item>
         </Form>
