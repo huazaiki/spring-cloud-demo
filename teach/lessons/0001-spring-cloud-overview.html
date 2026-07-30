@@ -1,0 +1,149 @@
+ <!DOCTYPE html>
+ <html lang="zh-CN">
+ <head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Lesson 0001 — Spring Cloud 微服务全景图</title>
+ <link rel="stylesheet" href="../assets/style.css">
+ </head>
+ <body>
+
+ <h1>Spring Cloud 微服务全景图</h1>
+ <p class="meta">Lesson 0001 &middot; 预计阅读 8 分钟 &middot; 基于 <code>spring-cloud-demo</code> 项目</p>
+
+ <h2>为什么会有微服务？</h2>
+
+ <p>
+ 想象一个单体应用：所有代码在一个项目里，部署一个 WAR 包。改一行代码要全量回归测试，某个模块的流量暴涨会把整个应用拖垮，团队之间互相踩代码。单体架构不是不好 —— 它在项目初期能让人跑得很快 —— 但它有一条硬天花板：<strong>复杂度超过某个临界点后，加人不会让开发变快，反而更慢</strong>。
+ </p>
+
+ <p>
+ 微服务的核心思想很简单：<strong>按业务边界把大应用拆成一组小服务</strong>，每个服务有自己的数据库、独立的部署周期、独立的技术选型。代价是网络通信、数据一致性、运维复杂度全部上升。Spring Cloud 做的事情就是帮你管理这些代价。
+ </p>
+
+ <div class="box box-info">
+ <strong>一句话：</strong>Spring Cloud 不是发明了新东西，它是把微服务架构中每个人都会遇到的通用问题（服务怎么发现彼此？请求怎么路由？失败了怎么办？）给出了一套标准化的、和 Spring Boot 深度集成的解决方案。
+ </div>
+
+ <h2>用这个项目理解架构</h2>
+
+ <p>
+ 先看这个 Procure-to-Pay 系统的整体结构。所有外部请求的统一入口是 <strong>Gateway</strong>，背后挂了 5 个业务服务和一个认证服务：
+ </p>
+
+ <div class="diagram">
+                     Browser / API Client
+                            |
+                     ┌──────┴──────┐
+                     │   Gateway   │  :8080  路由 + JWT 鉴权 + 限流
+                     └──────┬──────┘
+            ┌───────────────┼───────────────┬──────────────┐
+       ┌────┴────┐   ┌──────┴──────┐  ┌─────┴─────┐  ┌────┴─────┐
+       │  Auth   │   │  Supplier   │  │ Purchase  │  │ Payment  │
+       │  :8081  │   │  :8082      │  │ :8083     │  │ :8085    │
+       └─────────┘   └─────────────┘  └─────┬─────┘  └──────────┘
+                                            │ Feign / Kafka
+                                     ┌──────┴──────┐
+                                     │  Inventory  │
+                                     │  :8084      │
+                                     └─────────────┘
+  </div>
+
+ <p>这 7 个模块各自承担什么角色，一目了然：</p>
+
+ <table>
+   <tr><th>模块</th><th>端口</th><th>职责</th></tr>
+   <tr><td><code>gateway-service</code></td><td>8080</td><td>统一入口：路由转发、JWT 鉴权、限流</td></tr>
+   <tr><td><code>auth-service</code></td><td>8081</td><td>用户注册/登录，签发 JWT</td></tr>
+   <tr><td><code>supplier-service</code></td><td>8082</td><td>供应商主数据 CRUD</td></tr>
+   <tr><td><code>purchase-service</code></td><td>8083</td><td>采购订单的完整生命周期</td></tr>
+   <tr><td><code>inventory-service</code></td><td>8084</td><td>物料管理、库存预留、入库</td></tr>
+   <tr><td><code>payment-service</code></td><td>8085</td><td>应付账款的生成与审批</td></tr>
+   <tr><td><code>common</code></td><td>—</td><td>共享代码：统一响应体、异常定义</td></tr>
+ </table>
+
+ <h2>这个项目用到的 Spring Cloud 组件</h2>
+
+ <p>Spring Cloud 不是一个单一框架，而是一组解决不同问题的组件。下面这张表覆盖了这个项目实际引入的每一个核心组件，以及它解决的是什么问题：</p>
+
+ <table>
+   <tr><th>组件</th><th>在本项目中</th><th>解决的问题</th></tr>
+   <tr>
+     <td><strong>Spring Cloud Gateway</strong></td>
+     <td><code>gateway-service</code></td>
+     <td>所有外部请求走网关 → 根据路径前缀路由到对应服务。同时在这里做 JWT 校验，非法请求在网关层就拦住了。</td>
+   </tr>
+   <tr>
+     <td><strong>Nacos</strong></td>
+     <td>注册中心 + 配置中心</td>
+     <td>每个服务启动时向 Nacos 注册自己。Gateway 通过 <code>lb://service-name</code> 做负载均衡路由 —— 你不需要硬编码任何 IP。</td>
+   </tr>
+   <tr>
+     <td><strong>OpenFeign + LoadBalancer</strong></td>
+     <td>服务间 RPC 调用</td>
+     <td>purchase-service 需要调 inventory-service 预留库存时，声明一个 Feign 接口就行，不用手写 HTTP 调用。底层自动走负载均衡。</td>
+   </tr>
+   <tr>
+     <td><strong>Resilience4j</strong></td>
+     <td>熔断 & 限流</td>
+     <td>当下游服务挂了或响应慢，熔断器快速失败而不是让调用方也跟着卡死。</td>
+   </tr>
+   <tr>
+     <td><strong>Seata (AT 模式)</strong></td>
+     <td>分布式事务</td>
+     <td>采购订单审批 → 同时要预留库存。两个操作跨了 purchase-service 和 inventory-service，Seata 保证要么都成功要么都回滚。</td>
+   </tr>
+   <tr>
+     <td><strong>Kafka</strong></td>
+     <td>异步消息</td>
+     <td>入库完成 → 发 Kafka 事件 → payment-service 消费后生成应付账款。解耦了 inventory 和 payment 的直接依赖。</td>
+   </tr>
+   <tr>
+     <td><strong>Micrometer Tracing + Zipkin</strong></td>
+     <td>链路追踪</td>
+     <td>一个请求穿过 4 个服务，出问题时你需要在 Zipkin 里看到完整调用链，定位是哪个环节慢了或挂了。</td>
+   </tr>
+ </table>
+
+ <h2>一次完整的业务流程</h2>
+
+ <p>以采购场景为例，看看这些组件如何协同工作：</p>
+
+ <div class="diagram">
+ 1. 采购员 POST /api/v1/orders  →  Gateway 路由到 purchase-service，JWT 校验通过
+ 2. purchase-service 写入订单 (DRAFT)，返回订单号
+ 3. 审批人 PUT /api/v1/orders/{id}/approve  →  状态 DRAFT → APPROVED
+ 4. purchase-service 通过 Feign 调用 inventory-service.reserveStock()
+    └─ Seata 全局事务保证：订单审批 和 库存预留 原子操作
+ 5. 货物到仓，仓管员 POST /api/v1/inventory/receive
+ 6. inventory-service 更新库存 → 发送 Kafka 事件 "order.received"
+ 7. payment-service 消费事件 → 自动生成应付账款 (PENDING)
+ 8. 财务 PUT /api/v1/payments/{id}/approve → PENDING → APPROVED
+    └─ 再发 "payment.approved" 事件 → purchase-service 标记订单 SETTLED
+  </div>
+
+ <h2>思考题</h2>
+
+ <p>读完这课，试着在项目中找到这些文件，对照上面的概念理解每一层：</p>
+
+ <ol>
+   <li><a href="../../../gateway-service/src/main/java/com/huazaiki/gateway/filter/JwtAuthFilter.java">JwtAuthFilter.java</a> — 网关是怎么拦截未登录请求的？</li>
+   <li><a href="../../../gateway-service/src/main/resources/application.yml">gateway application.yml</a> — 路由规则 <code>lb://purchase-service</code> 的 <code>lb://</code> 是什么意思？</li>
+   <li><a href="../../../purchase-service/src/main/java/com/huazaiki/purchase/service/OrderService.java">OrderService.java</a> — <code>approveOrder</code> 方法里为什么只有一个状态判断？分布式事务在哪里？</li>
+ </ol>
+
+ <div class="box box-good">
+ <strong>关键启示：</strong>微服务架构本质上是一个 <em>分布式系统的复杂度管理方案</em>。Spring Cloud 的每个组件对应分布式系统的一个经典问题。接下来的课程会逐个深入这些组件，但永远不要忘记：<strong>组件的目的是解决问题，不是为了用而用。</strong>
+ </div>
+
+ <div class="nav">
+   <span>&larr; 这是第一课</span>
+   <span style="float:right">下一课：<a href="0002-service-discovery-nacos.html">Nacos 服务注册与发现</a></span>
+ </div>
+
+ <div class="ask">
+   <strong>有问题？</strong> 直接在这个对话里问。我可以解释任何你不清楚的概念，给你看具体的代码，或者调整课程的深度和节奏。
+ </div>
+
+ </body>
+ </html>
