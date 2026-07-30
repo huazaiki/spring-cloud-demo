@@ -25,6 +25,10 @@ public class OrderService {
         this.itemMapper = itemMapper;
     }
 
+    public List<PurchaseOrder> listOrders() {
+        return orderMapper.selectList(null);
+    }
+
     @Transactional
     public PurchaseOrder createOrder(Long supplierId, List<ItemLine> items) {
         PurchaseOrder order = new PurchaseOrder();

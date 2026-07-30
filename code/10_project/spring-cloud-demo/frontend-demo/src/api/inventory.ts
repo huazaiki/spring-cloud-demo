@@ -18,11 +18,6 @@ interface ReservePayload {
   quantity: number;
 }
 
-export async function listItems() {
-  const res = await client.get('/api/v1/inventory/items');
-  return res.data;
-}
-
 export async function createItem(payload: CreateItemPayload) {
   const res = await client.post('/api/v1/inventory/items', payload);
   return res.data;

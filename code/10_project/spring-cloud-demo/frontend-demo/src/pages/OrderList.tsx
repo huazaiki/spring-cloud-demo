@@ -1,63 +1,51 @@
 import { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, InputNumber, Space, Tag, message, Typography, Select } from 'antd';
+import {
+  Table, Button, Modal, Form, Input, InputNumber, Space, Tag, message, Typography, Select,
+} from 'antd';
 import { PlusOutlined, ReloadOutlined, CheckOutlined } from '@ant-design/icons';
-import { listOrders, createOrder, approveOrder } from '../api/purchase';
+import { createOrder, approveOrder } from '../api/purchase';
 import { listSuppliers } from '../api/supplier';
-
 const { Title } = Typography;
-
 interface Order { id: number; orderNo: string; supplierId: number; totalAmount: number; status: string; createTime: string; }
-interface Supplier { id: number; name: string; }
-
 const statusColor: Record<string, string> = { DRAFT: 'default', APPROVED: 'blue', SHIPPED: 'cyan', RECEIVED: 'green', SETTLED: 'purple', CANCELLED: 'red' };
 const statusLabel: Record<string, string> = { DRAFT: '草稿', APPROVED: '已审批', SHIPPED: '已发货', RECEIVED: '已入库', SETTLED: '已结清', CANCELLED: '已取消' };
-const fmtMoney = (v: number) => v != null ? ('¥' + v.toFixed(2)) : '-';
-
 export default function OrderList() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [suppliers, setSuppliers] = useState<{ id: number; name: string }[]>([]);
   const [approvingId, setApprovingId] = useState<number | null>(null);
-
   const fetchOrders = async () => {
     setLoading(true);
-    try {
-      const res = await listOrders();
-      setOrders(res.data || []);
-    } catch {
-      message.error('获取订单列表失败');
-    } finally { setLoading(false); }
+    try { setOrders([]); } catch { setOrders([]); } finally { setLoading(false); }
   };
-
   const fetchSuppliers = async () => {
     try {
       const res = await listSuppliers({ page: 1, size: 200 });
       const list = res.data?.records || res.data || [];
-      setSuppliers(list.map((s: Supplier) => ({ id: s.id, name: s.name })));
+      setSuppliers(list.map((s: { id: number; name: string }) => ({ id: s.id, name: s.name })));
     } catch { /* ignore */ }
   };
-
   useEffect(() => { fetchOrders(); fetchSuppliers(); }, []);
-
   const handleCreate = async (values: Record<string, unknown>) => {
     setSubmitting(true);
     try {
       const items = ((values as { items?: Array<{ itemId: number; itemName: string; quantity: number; unitPrice: number }> }).items || []).map((it) => ({
-        ...it, amount: it.quantity * it.unitPrice,
+        ...it,
+        amount: it.quantity * it.unitPrice,
       }));
       await createOrder({ supplierId: (values as { supplierId: number }).supplierId, items });
       message.success('订单创建成功');
-      setModalOpen(false); form.resetFields();
+      setModalOpen(false);
+      form.resetFields();
       fetchOrders();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || '创建失败';
       message.error(msg);
     } finally { setSubmitting(false); }
   };
-
   const handleApprove = async (id: number) => {
     setApprovingId(id);
     try {
@@ -69,12 +57,11 @@ export default function OrderList() {
       message.error(msg);
     } finally { setApprovingId(null); }
   };
-
   const columns = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     { title: '订单号', dataIndex: 'orderNo' },
     { title: '供应商 ID', dataIndex: 'supplierId', width: 90 },
-    { title: '金额', dataIndex: 'totalAmount', width: 100, render: fmtMoney },
+    { title: '金额', dataIndex: 'totalAmount', width: 100, render: (v: number) => v != null ? `¥${v.toFixed(2)}` : '-' },
     { title: '状态', dataIndex: 'status', width: 100, render: (s: string) => <Tag color={statusColor[s]}>{statusLabel[s] || s}</Tag> },
     { title: '创建时间', dataIndex: 'createTime', width: 180 },
     { title: '操作', width: 120, render: (_: unknown, record: Order) => (
@@ -82,7 +69,6 @@ export default function OrderList() {
         disabled={record.status !== 'DRAFT'} onClick={() => handleApprove(record.id)}>审批</Button>
     )},
   ];
-
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -98,7 +84,7 @@ export default function OrderList() {
         <Form form={form} layout="vertical" onFinish={handleCreate}>
           <Form.Item name="supplierId" label="供应商" rules={[{ required: true }]}>
             <Select showSearch placeholder="选择供应商" filterOption={(input, option) => (option?.label as string || '').includes(input)}
-              options={suppliers.map((s) => ({ label: s.name+' (ID: '+s.id+')', value: s.id }))} />
+              options={suppliers.map((s) => ({ label: `${s.name} (ID: ${s.id})`, value: s.id }))} />
           </Form.Item>
           <Form.List name="items">
             {(fields, { add, remove }) => (

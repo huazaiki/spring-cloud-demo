@@ -6,6 +6,7 @@ import com.huazaiki.inventory.service.InventoryService;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -16,6 +17,11 @@ public class InventoryController {
 
     public InventoryController(InventoryService inventoryService) {
         this.inventoryService = inventoryService;
+    }
+
+    @GetMapping("/items")
+    public ApiResponse<List<Item>> listItems() {
+        return ApiResponse.success(inventoryService.listItems());
     }
 
     @PostMapping("/items")

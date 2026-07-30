@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 public class PaymentService {
@@ -16,6 +17,10 @@ public class PaymentService {
 
     public PaymentService(PayableMapper payableMapper) {
         this.payableMapper = payableMapper;
+    }
+
+    public List<Payable> listPayables() {
+        return payableMapper.selectList(null);
     }
 
     @Transactional

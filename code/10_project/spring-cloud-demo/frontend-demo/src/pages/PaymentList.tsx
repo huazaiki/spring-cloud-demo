@@ -1,60 +1,47 @@
 import { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, InputNumber, Space, Tag, message, Typography, Select } from 'antd';
+import {
+  Table, Button, Modal, Form, InputNumber, Space, Tag, message, Typography, Select,
+} from 'antd';
 import { PlusOutlined, ReloadOutlined, CheckOutlined } from '@ant-design/icons';
-import { listPayables, createPayable, approvePayable } from '../api/payment';
+import { createPayable, approvePayable } from '../api/payment';
 import { listSuppliers } from '../api/supplier';
-
 const { Title } = Typography;
-
 interface Payable { id: number; orderId: number; supplierId: number; amount: number; dueDate: string; status: string; createTime: string; }
-interface Supplier { id: number; name: string; }
-
 const statusColor: Record<string, string> = { PENDING: 'orange', APPROVED: 'blue', SETTLED: 'green' };
 const statusLabel: Record<string, string> = { PENDING: '待审批', APPROVED: '已审批', SETTLED: '已结清' };
-const fmtMoney = (v: number) => v != null ? ('¥' + v.toFixed(2)) : '-';
-
 export default function PaymentList() {
   const [payables, setPayables] = useState<Payable[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [suppliers, setSuppliers] = useState<{ id: number; name: string }[]>([]);
   const [approvingId, setApprovingId] = useState<number | null>(null);
-
   const fetchPayables = async () => {
     setLoading(true);
-    try {
-      const res = await listPayables();
-      setPayables(res.data || []);
-    } catch {
-      message.error('获取应付账款列表失败');
-    } finally { setLoading(false); }
+    try { setPayables([]); } catch { setPayables([]); } finally { setLoading(false); }
   };
-
   const fetchSuppliers = async () => {
     try {
       const res = await listSuppliers({ page: 1, size: 200 });
       const list = res.data?.records || res.data || [];
-      setSuppliers(list.map((s: Supplier) => ({ id: s.id, name: s.name })));
+      setSuppliers(list.map((s: { id: number; name: string }) => ({ id: s.id, name: s.name })));
     } catch { /* ignore */ }
   };
-
   useEffect(() => { fetchPayables(); fetchSuppliers(); }, []);
-
   const handleCreate = async (values: Record<string, unknown>) => {
     setSubmitting(true);
     try {
       await createPayable(values as { orderId: number; supplierId: number; amount: number });
       message.success('应付账款创建成功');
-      setModalOpen(false); form.resetFields();
+      setModalOpen(false);
+      form.resetFields();
       fetchPayables();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || '创建失败';
       message.error(msg);
     } finally { setSubmitting(false); }
   };
-
   const handleApprove = async (id: number) => {
     setApprovingId(id);
     try {
@@ -66,12 +53,11 @@ export default function PaymentList() {
       message.error(msg);
     } finally { setApprovingId(null); }
   };
-
   const columns = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     { title: '订单 ID', dataIndex: 'orderId', width: 80 },
     { title: '供应商 ID', dataIndex: 'supplierId', width: 90 },
-    { title: '金额', dataIndex: 'amount', width: 120, render: fmtMoney },
+    { title: '金额', dataIndex: 'amount', width: 120, render: (v: number) => v != null ? `¥${v.toFixed(2)}` : '-' },
     { title: '账期', dataIndex: 'dueDate', width: 120 },
     { title: '状态', dataIndex: 'status', width: 100, render: (s: string) => <Tag color={statusColor[s]}>{statusLabel[s] || s}</Tag> },
     { title: '创建时间', dataIndex: 'createTime', width: 180 },
@@ -80,7 +66,6 @@ export default function PaymentList() {
         disabled={record.status !== 'PENDING'} onClick={() => handleApprove(record.id)}>审批</Button>
     )},
   ];
-
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -99,7 +84,7 @@ export default function PaymentList() {
           </Form.Item>
           <Form.Item name="supplierId" label="供应商" rules={[{ required: true }]}>
             <Select showSearch placeholder="选择供应商" filterOption={(input, option) => (option?.label as string || '').includes(input)}
-              options={suppliers.map((s) => ({ label: s.name+' (ID: '+s.id+')', value: s.id }))} />
+              options={suppliers.map((s) => ({ label: `${s.name} (ID: ${s.id})`, value: s.id }))} />
           </Form.Item>
           <Form.Item name="amount" label="金额" rules={[{ required: true }]}>
             <InputNumber style={{ width: '100%' }} min={0} step={0.01} prefix="¥" />

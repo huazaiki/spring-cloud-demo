@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, InputNumber, Space, message, Typography } from 'antd';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { listItems, createItem, receiveItem, reserveItem } from '../api/inventory';
-
+import { createItem, receiveItem, reserveItem } from '../api/inventory';
 const { Title } = Typography;
-
 interface Item { id: number; name: string; spec: string; unit: string; sku: string; }
-
 export default function ItemList() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
@@ -19,56 +16,48 @@ export default function ItemList() {
   const [reserveOpen, setReserveOpen] = useState(false);
   const [reserveSubmitting, setReserveSubmitting] = useState(false);
   const [reserveForm] = Form.useForm();
-
   const fetchItems = async () => {
     setLoading(true);
-    try {
-      const res = await listItems();
-      setItems(res.data || []);
-    } catch {
-      message.error('获取物料列表失败');
-    } finally { setLoading(false); }
+    try { setItems([]); } catch { setItems([]); } finally { setLoading(false); }
   };
-
   useEffect(() => { fetchItems(); }, []);
-
   const handleCreate = async (values: Record<string, unknown>) => {
     setSubmitting(true);
     try {
       await createItem(values as { name: string; spec: string; unit: string; sku: string });
       message.success('物料创建成功');
-      setModalOpen(false); form.resetFields();
+      setModalOpen(false);
+      form.resetFields();
       fetchItems();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || '创建失败';
       message.error(msg);
     } finally { setSubmitting(false); }
   };
-
   const handleReceive = async (values: Record<string, unknown>) => {
     setReceiveSubmitting(true);
     try {
       await receiveItem(values as { orderId: number; itemId: number; quantity: number });
       message.success('入库成功');
-      setReceiveOpen(false); receiveForm.resetFields();
+      setReceiveOpen(false);
+      receiveForm.resetFields();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || '入库失败';
       message.error(msg);
     } finally { setReceiveSubmitting(false); }
   };
-
   const handleReserve = async (values: Record<string, unknown>) => {
     setReserveSubmitting(true);
     try {
       await reserveItem(values as { itemId: number; quantity: number });
       message.success('库存预留成功');
-      setReserveOpen(false); reserveForm.resetFields();
+      setReserveOpen(false);
+      reserveForm.resetFields();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || '预留失败';
       message.error(msg);
     } finally { setReserveSubmitting(false); }
   };
-
   const columns = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     { title: '名称', dataIndex: 'name' },
@@ -76,7 +65,6 @@ export default function ItemList() {
     { title: '单位', dataIndex: 'unit', width: 80 },
     { title: 'SKU', dataIndex: 'sku' },
   ];
-
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
