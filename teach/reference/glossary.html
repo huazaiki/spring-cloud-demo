@@ -21,8 +21,11 @@
    <tr><td>Message Queue (消息队列)</td><td>服务间异步通信，解耦生产者和消费者。本项目用 Kafka，场景：库存入库后自动生成应付账款。</td></tr>
    <tr><td>Distributed Tracing (链路追踪)</td><td>在跨服务调用链中跟踪请求。每个请求带唯一 TraceId，可在 Zipkin 中查看完整调用链路。</td></tr>
    <tr><td>Feign (声明式 HTTP 客户端)</td><td>通过 Java 接口 + 注解定义远程调用，OpenFeign 自动生成实现。配合 LoadBalancer 实现服务名寻址。</td></tr>
-   <tr><td>JWT (JSON Web Token)</td><td>无状态认证令牌。用户登录后签发，后续请求在 Authorization 头中携带，Gateway 层统一校验。</td></tr>
- </table>
+  <tr><td>JWT (JSON Web Token)</td><td>无状态认证令牌。用户登录后签发，后续请求在 Authorization 头中携带，Gateway 层统一校验。</td></tr>
+  <tr><td>Nacos</td><td>阿里巴巴开源的服务注册与配置中心。本项目用作注册中心（服务发现）和配置中心（动态配置）。控制台默认地址 localhost:8848。</td></tr>
+  <tr><td>Namespace (命名空间)</td><td>Nacos 中的环境隔离机制。不同 namespace 下的服务互相不可见。本项目用 <code>dev</code> namespace。</td></tr>
+  <tr><td>临时实例 (Ephemeral Instance)</td><td>Nacos 默认的服务注册模式。服务通过心跳维持注册，心跳超时后自动剔除，适用于动态扩缩容的微服务场景。</td></tr>
+</table>
 
  <h2>本项目特有术语</h2>
  <p>参见项目 <a href="../../../CONTEXT.md">CONTEXT.md</a> 中的 Ubiquitous Language 表。</p>
