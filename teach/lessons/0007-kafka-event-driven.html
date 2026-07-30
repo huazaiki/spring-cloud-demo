@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 0007 — Kafka 消息队列与事件驱动</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>你不需要等我：Kafka 与事件驱动</h1>
+<p class="meta">Lesson 0007 &middot; 预计阅读 9 分钟</p>
+
+<h2>回顾：两种调用模式的根本差异</h2>
+
+<p>
+前面的课已经反复提到了同步调用（Feign）和异步消息（Kafka）的划分。这一课不再重复"什么时候用哪个"——而是深入理解：<strong>异步消息改变的不仅是性能，更是服务之间的关系模型。</strong>
+</p>
+
+<table>
+  <tr><th></th><th>同步调用 (Feign)</th><th>异步消息 (Kafka)</th></tr>
+  <tr><td>关系模型</td><td>调用方 — 被调方</td><td>生产者 — 消费者</td></tr>
+  <tr><td>耦合方式</td><td>调用方知道被调方的服务名和 API</td><td>双方只知道同一个 Topic 名</td></tr>
+  <tr><td>失败传播</td><td>调用方立即感知，需要熔断保护</td><td>消费者自行处理重试，生产者不感知</td></tr>
+  <tr><td>时间耦合</td><td>双方必须同时在线</td><td>任何一方随时上下线</td></tr>
+</table>
+
+<p>
+同步调用的关系像<strong>电话</strong>：你拨号，对方必须接，你等对方说完才能继续。异步消息的关系像<strong>邮件</strong>：你发送，对方什么时候看、什么时候回，你不需要知道——甚至对方换了一个人看这封邮件，你也不关心。
+</p>
+
+<h2>Topic：契约的新形态</h2>
+
+<p>
+在 Feign 的模型里，purchase-service 和 inventory-service 之间的契约是 <code>@FeignClient</code> 接口——一份"我提供这些方法，你按这个签名调"的说明书。在 Kafka 的模型里，契约变成了一条 <strong>Topic</strong>：一个命名的消息通道，生产者往里写，消费者从里读。
+</p>
+
+<pre># purchase-service application.yml (已有配置)
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: StringSerializer
+      value-serializer: JsonSerializer          # ← 消息体自动序列化为 JSON</pre>
+
+<p>
+生产者不需要知道消费者是谁。它只做一件事：把事件序列化成 JSON，发到一个 Topic。比如入库完成后：
+</p>
+
+<div class="diagram">
+inventory-service (Producer)
+  │
+  ├─ 1. 数据库: UPDATE inventory SET quantity = quantity + 100
+  │
+  └─ 2. 发消息到 Topic "inventory.received"
+         { orderId: 42, itemId: 3, quantity: 100, receivedAt: "..." }
+
+             ↓  Kafka Broker 持久化消息
+
+payment-service (Consumer)
+  │
+  └─ 3. 从 Topic "inventory.received" 读到消息
+       → 执行: INSERT INTO payable (order_id, ...)
+</div>
+
+<p>
+<strong>关键设计：</strong>如果 payment-service 当时挂了（还没部署、正在重启、数据库满了），消息不会丢失——Kafka 把它持久化在磁盘上。payment-service 恢复后，从上次中断的地方继续消费。这就是异步消息的核心优势：<strong>时间解耦。</strong>
+</p>
+
+<h2>从"命令"到"事件"：思维模型的转变</h2>
+
+<p>
+同步调用是命令式的：<code>inventoryClient.reserveStock()</code> 明确地告诉 inventory-service"你去执行这个操作"。异步消息是事件驱动的：生产者只是宣告"这件事已经发生了"，不指定谁来处理。
+</p>
+
+<table>
+  <tr><th>命令 (Command)</th><th>事件 (Event)</th></tr>
+  <tr><td>"给我预留库存"</td><td>"库存已经入库了"</td></tr>
+  <tr><td>指定执行者</td><td>不指定消费者</td></tr>
+  <tr><td>调用方知道 API</td><td>只约定消息格式</td></tr>
+  <tr><td>失败 = 调用方感知</td><td>失败 = 消费者自己处理</td></tr>
+  <tr><td>Feign / gRPC</td><td>Kafka / RabbitMQ</td></tr>
+</table>
+
+<div class="box box-good">
+<strong>事件驱动的真正价值：</strong>如果三个月后需要加一个新功能——"库存入库后自动发邮件通知采购员"，你不改 inventory-service 一行代码。加一个新的 Consumer 订阅同一个 Topic 就行。生产者和原有消费者完全不受影响。这叫<strong>"开放扩展，封闭修改"</strong>——不是 OOP 里的继承多态，而是架构级别的扩展点。
+</div>
+
+<h2>消息不会丢……但可能被处理多次</h2>
+
+<p>
+Kafka 默认提供 <strong>at-least-once</strong>（至少一次）语义：每条消息保证被消费，但不保证只被消费一次。原因在于：消费者处理完消息后向 Kafka 提交 offset（进度），如果处理成功但提交 offset 失败（网络抖动），恢复后会重新消费同一条消息。
+</p>
+
+<div class="diagram">
+消费者读到消息 offset=42:
+  ① 执行业务逻辑: INSERT INTO payable ...     ← 成功！
+  ② 提交 offset=43 给 Kafka                   ← 网络超时，提交失败
+  ③ 消费者重启
+  ④ 重新读到 offset=42                        ← 同一条消息又来了一遍
+  ⑤ 再次 INSERT INTO payable ...              ← 重复插入！
+</div>
+
+<p>
+解决办法不是让 Kafka"保证不重复"——这是 CAP 定理下做不到的。而是<strong>让消费者变得幂等</strong>：同一条消息处理两次，结果和一次一样。常用的手段：给每条消息带一个唯一 ID（如 order_no），消费前先检查"这个 ID 我已经处理过了吗"。
+</p>
+
+<div class="box box-info">
+<strong>幂等性不是可选的：</strong>在分布式系统中，任何消息驱动的消费者都应该设计为幂等的。因为你永远无法 100% 保证一条消息只被投递一次——你可以无限接近 exactly-once，但做不到绝对的 exactly-once。
+</div>
+
+<h2>Kafka 在整个体系中的位置</h2>
+
+<p>
+把 Kafka 放回项目的整体架构里看，它的角色变得清晰：
+</p>
+
+<table>
+  <tr><th>组件</th><th>通信模式</th><th>耦合度</th><th>典型场景</th></tr>
+  <tr><td>Gateway</td><td>外部 HTTP → 内部路由</td><td>无（纯转发）</td><td>统一入口</td></tr>
+  <tr><td>Feign</td><td>同步 RPC</td><td>调用方依赖被调方名和 API</td><td>审批 → 预留库存</td></tr>
+  <tr><td>Kafka</td><td>异步消息</td><td>只依赖 Topic 名和消息格式</td><td>入库 → 生成应付账款</td></tr>
+</table>
+
+<p>
+三者不是互相替代，而是各自解决不同的问题。一个成熟微服务系统的通信层，通常三者都有——Gateway 管入口、Feign 管同步业务链、Kafka 管异步通知链。
+</p>
+
+<h2>下一步</h2>
+
+<p>
+你已经走完了这个项目的核心组件：Gateway、Nacos、Feign、Resilience4j、Seata、Kafka。最后一课回到整体——把这些组件串起来，回答一个根本问题：<strong>为什么微服务值得它带来的复杂度？</strong>
+</p>
+
+<h3>延伸阅读</h3>
+<ul>
+  <li><a href="https://kafka.apache.org/documentation/#design" target="_blank">Kafka Design 文档</a> — 理解 Partition、Replication、Consumer Group 的设计决策</li>
+  <li><a href="https://microservices.io/patterns/data/event-driven-architecture.html" target="_blank">Event-Driven Architecture (microservices.io)</a></li>
+  <li><a href="https://www.confluent.io/blog/exactly-once-semantics-are-possible-heres-how-apache-kafka-does-it/" target="_blank">How Kafka achieves exactly-once</a> — 了解 Kafka 事务和幂等生产者的细节</li>
+</ul>
+
+<div class="nav">
+  <a href="0006-seata-distributed-transaction.html">&larr; Lesson 0006</a>
+  <span style="float:right">下一课：<a href="0008-summary-tradeoffs.html">总结与回顾</a></span>
+</div>
+
+<div class="ask">
+  <strong>有问题？</strong> 直接问。
+</div>
+
+</body>
+</html>
