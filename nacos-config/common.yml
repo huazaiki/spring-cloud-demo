@@ -1,0 +1,14 @@
+# 共享配置：所有服务通过 spring.config.import 加载
+# Nacos dataId: common.yml   group: DEFAULT_GROUP
+mybatis-plus:
+  global-config:
+    db-config:
+      id-type: assign_id
+  configuration:
+    map-underscore-to-camel-case: true
+
+spring:
+  datasource:
+    username: root
+    password: root@123!
+    driver-class-name: com.mysql.cj.jdbc.Driver

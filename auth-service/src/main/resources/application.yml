@@ -4,33 +4,13 @@ server:
 spring:
   application:
     name: auth-service
-  datasource:
-    url: jdbc:mysql://localhost:3306/auth_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
-    username: root
-    password: root123
-    driver-class-name: com.mysql.cj.jdbc.Driver
   cloud:
     nacos:
-      discovery:
-        server-addr: localhost:8848
-        namespace: dev
+      server-addr: localhost:8848
       config:
-        server-addr: localhost:8848
-        namespace: dev
-        import-check:
-          enabled: false
+        group: DEFAULT_GROUP
         file-extension: yml
-        shared-configs:
-          - data-id: common-config.yml
-            group: DEFAULT_GROUP
-
-mybatis-plus:
-  global-config:
-    db-config:
-      id-type: assign_id
-  configuration:
-    map-underscore-to-camel-case: true
-
-jwt:
-  secret: change-me-to-a-long-random-string-at-least-256-bits
-  expiration-ms: 3600000
+  config:
+    import:
+      - optional:nacos:common.yml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:auth-service.yml?group=DEFAULT_GROUP&refreshEnabled=true

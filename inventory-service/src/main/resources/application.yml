@@ -4,28 +4,13 @@ server:
 spring:
   application:
     name: inventory-service
-  datasource:
-    url: jdbc:mysql://localhost:3306/inventory_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
-    username: root
-    password: root123
-    driver-class-name: com.mysql.cj.jdbc.Driver
   cloud:
     nacos:
-      discovery:
-        server-addr: localhost:8848
-        namespace: dev
+      server-addr: localhost:8848
       config:
-        import-check:
-          enabled: false
-  kafka:
-    bootstrap-servers: localhost:9092
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-
-mybatis-plus:
-  global-config:
-    db-config:
-      id-type: assign_id
-  configuration:
-    map-underscore-to-camel-case: true
+        group: DEFAULT_GROUP
+        file-extension: yml
+  config:
+    import:
+      - optional:nacos:common.yml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:inventory-service.yml?group=DEFAULT_GROUP&refreshEnabled=true
