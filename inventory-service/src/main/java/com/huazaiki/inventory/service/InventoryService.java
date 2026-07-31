@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class InventoryService {
@@ -25,6 +26,10 @@ public class InventoryService {
         this.itemMapper = itemMapper;
         this.inventoryMapper = inventoryMapper;
         this.receiveRecordMapper = receiveRecordMapper;
+    }
+
+    public List<Item> listItems() {
+        return itemMapper.selectList(null);
     }
 
     public Item createItem(String name, String spec, String unit, String sku) {

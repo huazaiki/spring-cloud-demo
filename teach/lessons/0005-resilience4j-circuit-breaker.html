@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 0005 — Resilience4j 熔断、降级与重试</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>当你不能信任下游时：熔断、降级与重试</h1>
+<p class="meta">Lesson 0005 &middot; 预计阅读 9 分钟</p>
+
+<h2>从超时说起</h2>
+
+<p>
+purchase-service 调 inventory-service 预留库存。项目里已经配了 Feign 超时：
+</p>
+
+<pre># purchase-service application.yml
+spring.cloud.openfeign.client.config.default:
+  connect-timeout: 5000   # 建立连接最多等 5 秒
+  read-timeout: 5000      # 等待响应最多等 5 秒</pre>
+
+<p>
+5 秒一个请求。假设 inventory-service 因为数据库锁等待，每个请求要卡 5 秒才超时。Tomcat 默认 200 个线程——200 个并发请求都打到一个慢服务上，<strong>200 × 5 秒 = 整个 purchase-service 的线程池被耗尽</strong>。此时不仅是调库存的请求失败——连查订单列表这种不依赖 inventory 的请求也拿不到线程。
+</p>
+
+<p>
+这就是<strong>级联故障（Cascading Failure）</strong>的核心机制：下游慢 → 上游线程堆积 → 上游整体不可用 → 更上游跟着崩。单纯加超时不解决这个问题——超时只是让线程最终释放，但在释放之前，它们都被占着。
+</p>
+
+<div class="box box-warn">
+<strong>关键认知：</strong>超时防止无限等待，但不管制"同时有多少线程在等"。你需要的是<strong>主动拒绝</strong>——在已知下游不健康的时候，根本不发起调用。
+</div>
+
+<h2>电路断开：断路器模式的直觉</h2>
+
+<p>
+断路器（Circuit Breaker）的概念来自电气工程——你家里的电闸。电流过大时，跳闸，切断电路，保护电器。等故障排除后，手动推回去。软件断路器多了"自动半开试探"这一步，但直觉是一样的：<strong>与其反复尝试注定失败的操作，不如快速失败。</strong>
+</p>
+
+<p>
+Resilience4j 的断路器是一个<strong>状态机</strong>，只有三个状态：
+</p>
+
+<div class="diagram">
+     ┌──────────────────────────────────┐
+     │                                  │
+     ▼                                  │
+  CLOSED ──失败率超过阈值──▶  OPEN      │
+  (正常调用)              (快速失败)     │
+     ▲                      │           │
+     │                  等待一段时间      │
+     │                      │           │
+     │                      ▼           │
+     └──── 试探成功 ── HALF_OPEN         │
+                        (放行少量请求) ──┘
+                        试探失败 → 回到 OPEN
+</div>
+
+<table>
+  <tr><th>状态</th><th>行为</th><th>触发条件</th></tr>
+  <tr><td>CLOSED</td><td>正常放行所有请求，同时统计失败率</td><td>初始状态 / HALF_OPEN 试探成功后</td></tr>
+  <tr><td>OPEN</td><td>直接拒绝所有请求，抛 CallNotPermittedException</td><td>失败率超过阈值（如 50%）</td></tr>
+  <tr><td>HALF_OPEN</td><td>放行少量请求试探，成则 CLOSED，败则 OPEN</td><td>OPEN 状态持续一定时间后自动进入</td></tr>
+</table>
+
+<div class="box box-good">
+<strong>为什么 HALF_OPEN 很重要？</strong> 没有它，你必须手动重启才能恢复。有了它，断路器自己试探下游是否恢复——放几个请求试试，成功就重新合闸，失败就继续断开。这个"自动愈合"能力让运维成本降到零。
+</div>
+
+<h2>熔断之前：重试的陷阱</h2>
+
+<p>
+一个直觉是"失败了就重试几次"。Resilience4j 提供了 Retry 模块，但有一个关键的配置需要理解：<strong>重试间隔</strong>。
+</p>
+
+<div class="diagram">
+❌ 没有间隔的重试：
+  请求 → 失败 → 立刻重试 → 失败 → 立刻重试 → 失败
+  结果：3 次失败在 100ms 内完成，下游根本没恢复的时间
+
+✅ 有间隔的重试（退避）：
+  请求 → 失败 → 等 500ms → 重试 → 失败 → 等 1s → 重试
+  结果：给下游 1.5 秒喘息时间，可能已经恢复了
+</div>
+
+<p>
+退避策略（Backoff）的本质：<strong>不是重试次数越多越好，而是给下游恢复的时间窗口</strong>。固定间隔、指数退避（每次等 ×2）、随机抖动——核心目标都是"别在对方最脆弱的时候连续捶它"。
+</p>
+
+<p>
+但重试有一个上限：如果下游确实挂了（不是短暂抖动），重试只是在浪费你自己的线程资源。这时候断路器介入——重试几次都失败，直接熔断，不再重试。
+</p>
+
+<h2>三类防护的协作</h2>
+
+<p>
+Timeout、Retry、Circuit Breaker 不是三选一，是<strong>分层协作</strong>：
+</p>
+
+<table>
+  <tr><th>层级</th><th>解决的问题</th><th>触发时机</th></tr>
+  <tr><td>Timeout</td><td>单个请求不永远卡住</td><td>每次请求，连接或读取超时时</td></tr>
+  <tr><td>Retry</td><td>短暂网络抖动导致的偶发失败</td><td>超时或特定异常后，按退避策略重试</td></tr>
+  <tr><td>Circuit Breaker</td><td>下游持续不可用时保护上游资源</td><td>失败率累积超过阈值后熔断，拒绝请求</td></tr>
+</table>
+
+<p>
+顺序很重要：Timeout 最先触发 → 触发后交给 Retry → Retry 也失败则计入 Circuit Breaker 的失败统计 → 统计超标就熔断。三者像漏斗，少量偶发失败被 Retry 消化，持续失败被 Breaker 阻断。
+</p>
+
+<h2>断开了之后呢？降级的艺术</h2>
+
+<p>
+断路器 OPEN 时，默认行为是抛异常。但这意味着调用方也必须处理异常——你的 OrderService 需要 try-catch。更好的方式是定义 <strong>Fallback（降级方法）</strong>：
+</p>
+
+<pre>// 概念示意 — 不是完整可运行代码
+
+@CircuitBreaker(name = "inventory", fallbackMethod = "reserveStockFallback")
+public void reserveStock(Map body) {
+    inventoryClient.reserveStock(body);       // ← 可能被熔断
+}
+
+public void reserveStockFallback(Map body, Exception e) {
+    // 降级逻辑：库存服务不可用时，订单进入"待预留"状态
+    //   → 不阻塞审批，由异步任务稍后重试
+}</pre>
+
+<p>
+降级不是"假装成功"，而是<strong>"优雅地承认失败"</strong>。一个好的 Fallback 做三件事：</p>
+
+<ol>
+  <li><strong>不抛异常</strong>——否则断路器形同虚设</li>
+  <li><strong>记录上下文</strong>——哪些订单因为库存服务不可用而未能预留，便于事后补偿</li>
+  <li><strong>不阻塞主流程</strong>——审批可以继续，库存预留变为异步任务</li>
+</ol>
+
+<div class="box box-info">
+<strong>Fallback 和 Kafka 的天然配合：</strong>Fallback 把"预留库存"从同步调用降级为"写入一条待处理消息"→ Kafka → inventory-service 恢复后消费这个消息完成预留。断路器断开期间，没有请求丢失，只是处理时机延后了。
+</div>
+
+<h2>回到设计层面：信任与防御</h2>
+
+<p>
+微服务架构的本质假设是<strong>每个服务都可能出问题</strong>。你不需要信任下游，你需要防御下游。断路器模式的核心哲学可以归结为一句话：
+</p>
+
+<div class="box box-good">
+<strong>"Failing fast is better than failing slow."</strong><br>
+快速失败（断路器直接拒绝）比慢速失败（线程堆积直到超时）好一万倍。前者只影响依赖这个下游的业务，后者可能拖垮整个服务。
+</div>
+
+<p>
+Michael Nygard 在 2007 年的《Release It!》中首次提出软件断路器模式。那个时代还没有微服务，但他的洞察在今天比任何时候都更准确：<strong>分布式系统中，你不能阻止故障，你只能控制故障的爆炸半径。</strong>
+</p>
+
+<h2>下一步</h2>
+
+<p>
+你学会了保护自己不被下游拖垮。但还有一种情况：一个操作跨了多个服务（创建订单 → 预留库存 → 生成应付），其中某一步失败后，前面的操作需要回滚——这就是<strong>分布式事务</strong>。下一课讲 Seata AT 模式：怎么在一个本地事务的思维模型下，处理跨服务的回滚。
+</p>
+
+<h3>延伸阅读</h3>
+<ul>
+  <li><a href="https://resilience4j.readme.io/docs/circuitbreaker" target="_blank">Resilience4j CircuitBreaker 文档</a> — 官方对状态机和配置参数的完整说明</li>
+  <li><a href="https://microservices.io/patterns/reliability/circuit-breaker.html" target="_blank">Circuit Breaker 模式 (microservices.io)</a> — Chris Richardson 的模式图谱</li>
+  <li>Michael Nygard, <em>Release It!</em> — 断路器模式的原始出处，也讲了 Bulkhead、Timeout 等其他韧性模式</li>
+</ul>
+
+<div class="nav">
+  <a href="0004-openfeign-declarative-rpc.html">&larr; Lesson 0004</a>
+  <span style="float:right">下一课：<a href="0006-seata-distributed-transaction.html">Seata 分布式事务</a></span>
+</div>
+
+<div class="ask">
+  <strong>有问题？</strong> 直接问。
+</div>
+
+</body>
+</html>

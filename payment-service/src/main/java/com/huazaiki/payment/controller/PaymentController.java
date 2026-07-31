@@ -6,6 +6,7 @@ import com.huazaiki.payment.service.PaymentService;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -16,6 +17,11 @@ public class PaymentController {
 
     public PaymentController(PaymentService paymentService) {
         this.paymentService = paymentService;
+    }
+
+    @GetMapping
+    public ApiResponse<List<Payable>> list() {
+        return ApiResponse.success(paymentService.listPayables());
     }
 
     @PostMapping

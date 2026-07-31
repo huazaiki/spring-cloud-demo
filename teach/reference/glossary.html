@@ -1,0 +1,48 @@
+ <!DOCTYPE html>
+ <html lang="zh-CN">
+ <head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Glossary — Spring Cloud 术语表</title>
+ <link rel="stylesheet" href="../assets/style.css">
+ </head>
+ <body>
+ <h1>Spring Cloud 术语表</h1>
+ <p class="meta">随课程持续更新</p>
+
+ <h2>核心概念</h2>
+ <table>
+   <tr><th>术语</th><th>定义</th></tr>
+   <tr><td>Gateway (API 网关)</td><td>所有外部请求的统一入口，负责路由转发、认证鉴权、限流。本项目用 Spring Cloud Gateway 实现。</td></tr>
+   <tr><td>Service Discovery (服务发现)</td><td>服务实例动态注册和发现。服务启动时向注册中心报备，调用方通过服务名而非 IP 寻址。本项目用 Nacos。</td></tr>
+   <tr><td>Load Balancing (负载均衡)</td><td>将请求分发到多个服务实例。Spring Cloud LoadBalancer 与 Nacos 集成，配合 <code>lb://</code> 前缀使用。</td></tr>
+   <tr><td>Circuit Breaker (熔断器)</td><td>当下游服务持续失败时快速返回错误，避免请求堆积。本项目用 Resilience4j。</td></tr>
+   <tr><td>Distributed Transaction (分布式事务)</td><td>跨多个服务/数据库的事务一致性。本项目用 Seata AT 模式，通过 undo_log 表实现自动回滚。</td></tr>
+   <tr><td>Message Queue (消息队列)</td><td>服务间异步通信，解耦生产者和消费者。本项目用 Kafka，场景：库存入库后自动生成应付账款。</td></tr>
+   <tr><td>Distributed Tracing (链路追踪)</td><td>在跨服务调用链中跟踪请求。每个请求带唯一 TraceId，可在 Zipkin 中查看完整调用链路。</td></tr>
+   <tr><td>Feign (声明式 HTTP 客户端)</td><td>通过 Java 接口 + 注解定义远程调用，OpenFeign 自动生成实现。配合 LoadBalancer 实现服务名寻址。</td></tr>
+  <tr><td>JWT (JSON Web Token)</td><td>无状态认证令牌。用户登录后签发，后续请求在 Authorization 头中携带，Gateway 层统一校验。</td></tr>
+  <tr><td>Nacos</td><td>阿里巴巴开源的服务注册与配置中心。本项目用作注册中心（服务发现）和配置中心（动态配置）。控制台默认地址 localhost:8848。</td></tr>
+  <tr><td>Namespace (命名空间)</td><td>Nacos 中的环境隔离机制。不同 namespace 下的服务互相不可见。本项目用 <code>dev</code> namespace。</td></tr>
+  <tr><td>临时实例 (Ephemeral Instance)</td><td>Nacos 默认的服务注册模式。服务通过心跳维持注册，心跳超时后自动剔除，适用于动态扩缩容的微服务场景。</td></tr>
+  <tr><td>Circuit Breaker (断路器)</td><td>韧性模式，监控下游调用的失败率，超过阈值后直接拒绝请求（快速失败），避免上游线程资源被耗尽。三态：CLOSED（正常）、OPEN（熔断）、HALF_OPEN（试探恢复）。本项目使用 Resilience4j 实现。</td></tr>
+  <tr><td>Fallback (降级)</td><td>断路器 OPEN 时的替代逻辑。不是假装成功，而是优雅地承认失败——记录上下文、不阻塞主流程，为事后补偿（如 Kafka 异步重试）创造条件。</td></tr>
+  <tr><td>Backoff (退避策略)</td><td>重试时的等待策略。固定间隔、指数退避、随机抖动等。核心目标不是增加重试次数，而是给下游恢复留出时间窗口。</td></tr>
+  <tr><td>Cascading Failure (级联故障)</td><td>下游服务变慢 → 上游调用方线程堆积 → 上游整体不可用 → 更上游跟随崩溃。微服务架构中故障沿依赖链逐级放大的现象。</td></tr>
+  <tr><td>Feign Client</td><td>通过 <code>@FeignClient</code> 注解声明的 Java 接口，OpenFeign 自动生成动态代理实现。配合 LoadBalancer 实现服务名寻址，将远程 HTTP 调用伪装为本地方法调用。</td></tr>
+  <tr><td>Predicate (路由断言)</td><td>Gateway 路由的匹配条件。请求到达后依次匹配，命中则按对应 URI 转发。本项目使用 Path predicate。</td></tr>
+  <tr><td>GlobalFilter (全局过滤器)</td><td>对所有经过 Gateway 的请求生效的过滤器，实现 <code>GlobalFilter</code> 接口。适用于鉴权、日志、链路追踪等横切关注点。</td></tr>
+  <tr><td>透传头 (Pass-through Header)</td><td>Gateway 鉴权后将用户身份信息注入请求头传递给下游，避免每个下游服务重复解析 JWT，实现认证与授权的关注点分离。</td></tr>
+</table>
+
+ <h2>本项目特有术语</h2>
+ <p>参见项目 <a href="../../../CONTEXT.md">CONTEXT.md</a> 中的 Ubiquitous Language 表。</p>
+
+ <div class="nav">
+   <a href="../lessons/0001-spring-cloud-overview.html">&larr; Lesson 0001</a>
+ </div>
+ </body>
+  <tr><td>undo_log</td><td>Seata AT 模式在每个参与事务的数据库中维护的表。记录每次 UPDATE/INSERT/DELETE 前后的数据快照（before image / after image），用于全局回滚时自动恢复数据。</td></tr>
+  <tr><td>TC / TM / RM</td><td>Seata 分布式事务的三个角色：TC（Transaction Coordinator，Seata Server）协调全局事务状态；TM（Transaction Manager，标注 @GlobalTransactional 的服务）声明事务边界；RM（Resource Manager，各服务的数据库）管理本地事务和 undo_log。</td></tr>
+  <tr><td>2PC (Two-Phase Commit)</td><td>经典分布式事务协议：Phase 1 所有参与者锁定资源但不提交，Phase 2 协调者统一发 Commit/Rollback。问题是 Phase 1 的锁持有时间长，吞吐量低。Seata AT 的改进是 Phase 1 直接提交。</td></tr>
+ </html>
