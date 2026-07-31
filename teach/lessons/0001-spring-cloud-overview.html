@@ -53,12 +53,12 @@
 
  <table>
    <tr><th>模块</th><th>端口</th><th>职责</th></tr>
-   <tr><td><code>gateway-service</code></td><td>8080</td><td>统一入口：路由转发、JWT 鉴权、限流</td></tr>
-   <tr><td><code>auth-service</code></td><td>8081</td><td>用户注册/登录，签发 JWT</td></tr>
-   <tr><td><code>supplier-service</code></td><td>8082</td><td>供应商主数据 CRUD</td></tr>
-   <tr><td><code>purchase-service</code></td><td>8083</td><td>采购订单的完整生命周期</td></tr>
-   <tr><td><code>inventory-service</code></td><td>8084</td><td>物料管理、库存预留、入库</td></tr>
-   <tr><td><code>payment-service</code></td><td>8085</td><td>应付账款的生成与审批</td></tr>
+   <tr><td><code>sc-gateway-service</code></td><td>8080</td><td>统一入口：路由转发、JWT 鉴权、限流</td></tr>
+   <tr><td><code>sc-auth-service</code></td><td>8081</td><td>用户注册/登录，签发 JWT</td></tr>
+   <tr><td><code>sc-supplier-service</code></td><td>8082</td><td>供应商主数据 CRUD</td></tr>
+   <tr><td><code>sc-purchase-service</code></td><td>8083</td><td>采购订单的完整生命周期</td></tr>
+   <tr><td><code>sc-inventory-service</code></td><td>8084</td><td>物料管理、库存预留、入库</td></tr>
+   <tr><td><code>sc-payment-service</code></td><td>8085</td><td>应付账款的生成与审批</td></tr>
    <tr><td><code>common</code></td><td>—</td><td>共享代码：统一响应体、异常定义</td></tr>
  </table>
 
@@ -70,7 +70,7 @@
    <tr><th>组件</th><th>在本项目中</th><th>解决的问题</th></tr>
    <tr>
      <td><strong>Spring Cloud Gateway</strong></td>
-     <td><code>gateway-service</code></td>
+     <td><code>sc-gateway-service</code></td>
      <td>所有外部请求走网关 → 根据路径前缀路由到对应服务。同时在这里做 JWT 校验，非法请求在网关层就拦住了。</td>
    </tr>
    <tr>
@@ -81,7 +81,7 @@
    <tr>
      <td><strong>OpenFeign + LoadBalancer</strong></td>
      <td>服务间 RPC 调用</td>
-     <td>purchase-service 需要调 inventory-service 预留库存时，声明一个 Feign 接口就行，不用手写 HTTP 调用。底层自动走负载均衡。</td>
+     <td>sc-purchase-service 需要调 sc-inventory-service 预留库存时，声明一个 Feign 接口就行，不用手写 HTTP 调用。底层自动走负载均衡。</td>
    </tr>
    <tr>
      <td><strong>Resilience4j</strong></td>
@@ -91,12 +91,12 @@
    <tr>
      <td><strong>Seata (AT 模式)</strong></td>
      <td>分布式事务</td>
-     <td>采购订单审批 → 同时要预留库存。两个操作跨了 purchase-service 和 inventory-service，Seata 保证要么都成功要么都回滚。</td>
+     <td>采购订单审批 → 同时要预留库存。两个操作跨了 sc-purchase-service 和 sc-inventory-service，Seata 保证要么都成功要么都回滚。</td>
    </tr>
    <tr>
      <td><strong>Kafka</strong></td>
      <td>异步消息</td>
-     <td>入库完成 → 发 Kafka 事件 → payment-service 消费后生成应付账款。解耦了 inventory 和 payment 的直接依赖。</td>
+     <td>入库完成 → 发 Kafka 事件 → sc-payment-service 消费后生成应付账款。解耦了 inventory 和 payment 的直接依赖。</td>
    </tr>
    <tr>
      <td><strong>Micrometer Tracing + Zipkin</strong></td>
@@ -110,16 +110,16 @@
  <p>以采购场景为例，看看这些组件如何协同工作：</p>
 
  <div class="diagram">
- 1. 采购员 POST /api/v1/orders  →  Gateway 路由到 purchase-service，JWT 校验通过
- 2. purchase-service 写入订单 (DRAFT)，返回订单号
+ 1. 采购员 POST /api/v1/orders  →  Gateway 路由到 sc-purchase-service，JWT 校验通过
+ 2. sc-purchase-service 写入订单 (DRAFT)，返回订单号
  3. 审批人 PUT /api/v1/orders/{id}/approve  →  状态 DRAFT → APPROVED
- 4. purchase-service 通过 Feign 调用 inventory-service.reserveStock()
+ 4. sc-purchase-service 通过 Feign 调用 sc-inventory-service.reserveStock()
     └─ Seata 全局事务保证：订单审批 和 库存预留 原子操作
  5. 货物到仓，仓管员 POST /api/v1/inventory/receive
- 6. inventory-service 更新库存 → 发送 Kafka 事件 "order.received"
- 7. payment-service 消费事件 → 自动生成应付账款 (PENDING)
+ 6. sc-inventory-service 更新库存 → 发送 Kafka 事件 "order.received"
+ 7. sc-payment-service 消费事件 → 自动生成应付账款 (PENDING)
  8. 财务 PUT /api/v1/payments/{id}/approve → PENDING → APPROVED
-    └─ 再发 "payment.approved" 事件 → purchase-service 标记订单 SETTLED
+    └─ 再发 "payment.approved" 事件 → sc-purchase-service 标记订单 SETTLED
   </div>
 
  <h2>思考题</h2>
@@ -127,9 +127,9 @@
  <p>读完这课，试着在项目中找到这些文件，对照上面的概念理解每一层：</p>
 
  <ol>
-   <li><a href="../../../gateway-service/src/main/java/com/huazaiki/gateway/filter/JwtAuthFilter.java">JwtAuthFilter.java</a> — 网关是怎么拦截未登录请求的？</li>
-   <li><a href="../../../gateway-service/src/main/resources/application.yml">gateway application.yml</a> — 路由规则 <code>lb://purchase-service</code> 的 <code>lb://</code> 是什么意思？</li>
-   <li><a href="../../../purchase-service/src/main/java/com/huazaiki/purchase/service/OrderService.java">OrderService.java</a> — <code>approveOrder</code> 方法里为什么只有一个状态判断？分布式事务在哪里？</li>
+   <li><a href="../../../sc-gateway-service/src/main/java/com/huazaiki/gateway/filter/JwtAuthFilter.java">JwtAuthFilter.java</a> — 网关是怎么拦截未登录请求的？</li>
+   <li><a href="../../../sc-gateway-service/src/main/resources/application.yml">gateway application.yml</a> — 路由规则 <code>lb://sc-purchase-service</code> 的 <code>lb://</code> 是什么意思？</li>
+   <li><a href="../../../sc-purchase-service/src/main/java/com/huazaiki/purchase/service/OrderService.java">OrderService.java</a> — <code>approveOrder</code> 方法里为什么只有一个状态判断？分布式事务在哪里？</li>
  </ol>
 
  <div class="box box-good">

@@ -14,7 +14,7 @@
  <h2>没有注册中心会怎样？</h2>
 
  <p>
- 假设你要让 purchase-service 调 inventory-service。最简单的做法：在 application.yml 里写死 <code>http://10.0.0.5:8084</code>。然后某天运维重启了 inventory-service，IP 变成了 <code>10.0.0.8</code>——崩了。再加两台实例扩容，你得手动改配置加上 <code>10.0.0.9</code> 和 <code>10.0.0.10</code>——运维噩梦。
+ 假设你要让 sc-purchase-service 调 sc-inventory-service。最简单的做法：在 application.yml 里写死 <code>http://10.0.0.5:8084</code>。然后某天运维重启了 sc-inventory-service，IP 变成了 <code>10.0.0.8</code>——崩了。再加两台实例扩容，你得手动改配置加上 <code>10.0.0.9</code> 和 <code>10.0.0.10</code>——运维噩梦。
  </p>
 
  <p>
@@ -39,7 +39,7 @@
    </tr>
  </table>
 
- <p>看 <a href="../../../auth-service/src/main/resources/application.yml">auth-service 的配置</a> —— 它是项目里唯一一个同时用了 discovery 和 config 的服务：</p>
+ <p>看 <a href="../../../sc-auth-service/src/main/resources/application.yml">sc-auth-service 的配置</a> —— 它是项目里唯一一个同时用了 discovery 和 config 的服务：</p>
 
  <pre>spring:
    cloud:
@@ -59,15 +59,15 @@
 
  <h2>一个服务从启动到被发现</h2>
 
- <p>以 purchase-service 为例，看完整的注册流程：</p>
+ <p>以 sc-purchase-service 为例，看完整的注册流程：</p>
 
  <div class="diagram">
- 1. purchase-service 启动
- 2. 读取 application.yml: spring.application.name = purchase-service
+ 1. sc-purchase-service 启动
+ 2. 读取 application.yml: spring.application.name = sc-purchase-service
  3. 连接 Nacos (localhost:8848, namespace: dev)
- 4. 向 Nacos 注册: { 服务名: purchase-service, IP: 本机, 端口: 8083 }
+ 4. 向 Nacos 注册: { 服务名: sc-purchase-service, IP: 本机, 端口: 8083 }
  5. 每隔 5 秒发心跳给 Nacos（临时实例）
- 6. Nacos 上可以看到 purchase-service 的状态为 UP
+ 6. Nacos 上可以看到 sc-purchase-service 的状态为 UP
  </div>
 
  <p>所有 6 个服务都配了同样的 Nacos 地址和 namespace：</p>
@@ -82,21 +82,21 @@ spring:
 
  <h2>Gateway 怎么利用服务发现</h2>
 
- <p>回头看第一课里提过的 <a href="../../../gateway-service/src/main/resources/application.yml">gateway 路由配置</a>：</p>
+ <p>回头看第一课里提过的 <a href="../../../sc-gateway-service/src/main/resources/application.yml">gateway 路由配置</a>：</p>
 
  <pre>cloud:
   gateway:
     routes:
-      - id: purchase-service
-        uri: lb://purchase-service    &larr; 关键：不是 http://ip:port
+      - id: sc-purchase-service
+        uri: lb://sc-purchase-service    &larr; 关键：不是 http://ip:port
         predicates:
           - Path=/api/v1/orders/**</pre>
 
- <p><code>lb://purchase-service</code> 的执行过程：</p>
+ <p><code>lb://sc-purchase-service</code> 的执行过程：</p>
 
  <ol>
-   <li>Gateway 收到 <code>/api/v1/orders</code> 请求，匹配到 purchase-service 路由</li>
-   <li>解析 <code>lb://purchase-service</code> → 从 Nacos 查询名为 <code>purchase-service</code> 的实例列表</li>
+   <li>Gateway 收到 <code>/api/v1/orders</code> 请求，匹配到 sc-purchase-service 路由</li>
+   <li>解析 <code>lb://sc-purchase-service</code> → 从 Nacos 查询名为 <code>sc-purchase-service</code> 的实例列表</li>
    <li>Spring Cloud LoadBalancer 从列表中选一个实例（默认轮询）</li>
    <li>把请求转发到该实例的 <code>/api/v1/orders</code></li>
  </ol>
@@ -107,12 +107,12 @@ spring:
 
  <table>
    <tr><th>服务名</th><th>实例数</th><th>健康状态</th></tr>
-   <tr><td><code>gateway-service</code></td><td>1</td><td>true</td></tr>
-   <tr><td><code>auth-service</code></td><td>1</td><td>true</td></tr>
-   <tr><td><code>supplier-service</code></td><td>1</td><td>true</td></tr>
-   <tr><td><code>purchase-service</code></td><td>1</td><td>true</td></tr>
-   <tr><td><code>inventory-service</code></td><td>1</td><td>true</td></tr>
-   <tr><td><code>payment-service</code></td><td>1</td><td>true</td></tr>
+   <tr><td><code>sc-gateway-service</code></td><td>1</td><td>true</td></tr>
+   <tr><td><code>sc-auth-service</code></td><td>1</td><td>true</td></tr>
+   <tr><td><code>sc-supplier-service</code></td><td>1</td><td>true</td></tr>
+   <tr><td><code>sc-purchase-service</code></td><td>1</td><td>true</td></tr>
+   <tr><td><code>sc-inventory-service</code></td><td>1</td><td>true</td></tr>
+   <tr><td><code>sc-payment-service</code></td><td>1</td><td>true</td></tr>
  </table>
 
  <p>点进任何一个服务，可以看到实例的 IP、端口、权重、元数据。如果关掉一个服务，等几秒它就会从列表里消失（心跳超时）。</p>
@@ -129,7 +129,7 @@ spring:
  <p>版本由父 POM 的 <code>spring-cloud-alibaba-dependencies</code> BOM 统一管理，不需要手写。</p>
 
  <div class="box box-good">
- <strong>关键启示：</strong>Nacos 的本职工作是<em>解耦服务的物理地址和逻辑标识</em>。调用方只需要知道"我要调 inventory-service"，不需要知道它在哪台机器上。这为动态扩缩容、故障转移、蓝绿部署铺平了路。
+ <strong>关键启示：</strong>Nacos 的本职工作是<em>解耦服务的物理地址和逻辑标识</em>。调用方只需要知道"我要调 sc-inventory-service"，不需要知道它在哪台机器上。这为动态扩缩容、故障转移、蓝绿部署铺平了路。
  </div>
 
  <div class="nav">

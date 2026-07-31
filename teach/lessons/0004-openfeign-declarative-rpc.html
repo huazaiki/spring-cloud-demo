@@ -39,7 +39,7 @@ OpenFeign 解决了这个矛盾。它让你<strong>声明意图</strong>，而�
 
 <pre>// 命令式：我知道 URL、Method、Body 格式，我安排好每一个细节
 RestTemplate rest = new RestTemplate();
-String url = "http://inventory-service:8084/api/v1/inventory/reserve";
+String url = "http://sc-inventory-service:8084/api/v1/inventory/reserve";
 HttpHeaders headers = new HttpHeaders();
 headers.setContentType(MediaType.APPLICATION_JSON);
 HttpEntity&lt;Map&gt; request = new HttpEntity&lt;&gt;(body, headers);
@@ -75,7 +75,7 @@ inventoryClient.reserveStock(body)     // 你的调用
 
      ↓  代理拦截
 
-1. 读取 @FeignClient(name = "inventory-service")
+1. 读取 @FeignClient(name = "sc-inventory-service")
 2. 找到 @PostMapping("/api/v1/inventory/reserve")
 3. 拼接 URL = http://{实例地址}/api/v1/inventory/reserve
 4. 序列化 body 为 JSON
@@ -90,10 +90,10 @@ inventoryClient.reserveStock(body)     // 你的调用
 <h2>接口即契约</h2>
 
 <p>
-在 Feign 的世界里，<code>InventoryFeignClient</code> 不止是调用工具——它是 purchase-service 对 inventory-service 的<strong>需求声明</strong>：
+在 Feign 的世界里，<code>InventoryFeignClient</code> 不止是调用工具——它是 sc-purchase-service 对 sc-inventory-service 的<strong>需求声明</strong>：
 </p>
 
-<pre>@FeignClient(name = "inventory-service")
+<pre>@FeignClient(name = "sc-inventory-service")
 public interface InventoryFeignClient {
 
     @PostMapping("/api/v1/inventory/reserve")
@@ -108,9 +108,9 @@ public interface InventoryFeignClient {
 </p>
 
 <ol>
-  <li>purchase-service 需要 inventory-service 提供<strong>这两个</strong>能力（不是全部 API 都要）</li>
+  <li>sc-purchase-service 需要 sc-inventory-service 提供<strong>这两个</strong>能力（不是全部 API 都要）</li>
   <li>调用的<strong>约定</strong>：路径、请求方法、参数格式、返回值类型</li>
-  <li>如果 inventory-service 改了 <code>/api/v1/inventory/reserve</code> 的签名，<strong>编译就报错</strong>——比运行时发现快得多</li>
+  <li>如果 sc-inventory-service 改了 <code>/api/v1/inventory/reserve</code> 的签名，<strong>编译就报错</strong>——比运行时发现快得多</li>
 </ol>
 
 <div class="box box-good">
@@ -170,7 +170,7 @@ Feign 让你优雅地发起远程调用，但它不回答另一个问题：如�
 <ul>
   <li><a href="https://docs.spring.io/spring-cloud-openfeign/reference/spring-cloud-openfeign.html" target="_blank">Spring Cloud OpenFeign 官方文档</a> — 契约、拦截器、超时配置</li>
   <li><a href="https://martinfowler.com/articles/microservices.html" target="_blank">Martin Fowler: Microservices</a> — 理解服务间通信在微服务架构中的位置</li>
-  <li><a href="../../../purchase-service/src/main/java/com/huazaiki/purchase/feign/InventoryFeignClient.java">项目中 InventoryFeignClient 的完整实现</a></li>
+  <li><a href="../../../sc-purchase-service/src/main/java/com/huazaiki/purchase/feign/InventoryFeignClient.java">项目中 InventoryFeignClient 的完整实现</a></li>
 </ul>
 
 <div class="nav">

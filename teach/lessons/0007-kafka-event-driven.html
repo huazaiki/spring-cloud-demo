@@ -32,10 +32,10 @@
 <h2>Topic：契约的新形态</h2>
 
 <p>
-在 Feign 的模型里，purchase-service 和 inventory-service 之间的契约是 <code>@FeignClient</code> 接口——一份"我提供这些方法，你按这个签名调"的说明书。在 Kafka 的模型里，契约变成了一条 <strong>Topic</strong>：一个命名的消息通道，生产者往里写，消费者从里读。
+在 Feign 的模型里，sc-purchase-service 和 sc-inventory-service 之间的契约是 <code>@FeignClient</code> 接口——一份"我提供这些方法，你按这个签名调"的说明书。在 Kafka 的模型里，契约变成了一条 <strong>Topic</strong>：一个命名的消息通道，生产者往里写，消费者从里读。
 </p>
 
-<pre># purchase-service application.yml (已有配置)
+<pre># sc-purchase-service application.yml (已有配置)
 spring:
   kafka:
     bootstrap-servers: localhost:9092
@@ -48,7 +48,7 @@ spring:
 </p>
 
 <div class="diagram">
-inventory-service (Producer)
+sc-inventory-service (Producer)
   │
   ├─ 1. 数据库: UPDATE inventory SET quantity = quantity + 100
   │
@@ -57,20 +57,20 @@ inventory-service (Producer)
 
              ↓  Kafka Broker 持久化消息
 
-payment-service (Consumer)
+sc-payment-service (Consumer)
   │
   └─ 3. 从 Topic "inventory.received" 读到消息
        → 执行: INSERT INTO payable (order_id, ...)
 </div>
 
 <p>
-<strong>关键设计：</strong>如果 payment-service 当时挂了（还没部署、正在重启、数据库满了），消息不会丢失——Kafka 把它持久化在磁盘上。payment-service 恢复后，从上次中断的地方继续消费。这就是异步消息的核心优势：<strong>时间解耦。</strong>
+<strong>关键设计：</strong>如果 sc-payment-service 当时挂了（还没部署、正在重启、数据库满了），消息不会丢失——Kafka 把它持久化在磁盘上。sc-payment-service 恢复后，从上次中断的地方继续消费。这就是异步消息的核心优势：<strong>时间解耦。</strong>
 </p>
 
 <h2>从"命令"到"事件"：思维模型的转变</h2>
 
 <p>
-同步调用是命令式的：<code>inventoryClient.reserveStock()</code> 明确地告诉 inventory-service"你去执行这个操作"。异步消息是事件驱动的：生产者只是宣告"这件事已经发生了"，不指定谁来处理。
+同步调用是命令式的：<code>inventoryClient.reserveStock()</code> 明确地告诉 sc-inventory-service"你去执行这个操作"。异步消息是事件驱动的：生产者只是宣告"这件事已经发生了"，不指定谁来处理。
 </p>
 
 <table>
@@ -83,7 +83,7 @@ payment-service (Consumer)
 </table>
 
 <div class="box box-good">
-<strong>事件驱动的真正价值：</strong>如果三个月后需要加一个新功能——"库存入库后自动发邮件通知采购员"，你不改 inventory-service 一行代码。加一个新的 Consumer 订阅同一个 Topic 就行。生产者和原有消费者完全不受影响。这叫<strong>"开放扩展，封闭修改"</strong>——不是 OOP 里的继承多态，而是架构级别的扩展点。
+<strong>事件驱动的真正价值：</strong>如果三个月后需要加一个新功能——"库存入库后自动发邮件通知采购员"，你不改 sc-inventory-service 一行代码。加一个新的 Consumer 订阅同一个 Topic 就行。生产者和原有消费者完全不受影响。这叫<strong>"开放扩展，封闭修改"</strong>——不是 OOP 里的继承多态，而是架构级别的扩展点。
 </div>
 
 <h2>消息不会丢……但可能被处理多次</h2>

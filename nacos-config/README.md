@@ -32,12 +32,12 @@ nacos-client `2.4.x` 与 Nacos Server `3.x` 兼容，无需额外调整依赖。
 ```
 nacos-config/
 ├── common.yml            # 共享配置
-├── auth-service.yml      # dataId = auth-service.yml
-├── supplier-service.yml
-├── purchase-service.yml
-├── inventory-service.yml
-├── payment-service.yml
-├── gateway-service.yml
+├── sc-auth-service.yml      # dataId = sc-auth-service.yml
+├── sc-supplier-service.yml
+├── sc-purchase-service.yml
+├── sc-inventory-service.yml
+├── sc-payment-service.yml
+├── sc-gateway-service.yml
 ├── import-to-nacos.sh    # 一键导入脚本
 └── README.md
 ```

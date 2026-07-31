@@ -19,14 +19,14 @@
     <description>Supply Chain Procure-to-Pay Demo</description>
 
     <modules>
-        <module>common</module>
-        <module>auth-service</module>
+        <module>sc-common</module>
+        <module>sc-auth-service</module>
         <!-- TODO: add as each service is developed -->
-        <module>supplier-service</module>
-        <module>purchase-service</module>
-        <module>inventory-service</module>
-        <module>payment-service</module>
-        <module>gateway-service</module>
+        <module>sc-supplier-service</module>
+        <module>sc-purchase-service</module>
+        <module>sc-inventory-service</module>
+        <module>sc-payment-service</module>
+        <module>sc-gateway-service</module>
     </modules>
 
     <properties>
@@ -104,7 +104,7 @@
 
             <dependency>
                 <groupId>com.huazaiki</groupId>
-                <artifactId>common</artifactId>
+                <artifactId>sc-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

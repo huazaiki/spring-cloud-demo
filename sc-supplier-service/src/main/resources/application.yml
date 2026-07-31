@@ -1,0 +1,16 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: sc-supplier-service
+  cloud:
+    nacos:
+      server-addr: localhost:8848
+      config:
+        group: DEFAULT_GROUP
+        file-extension: yml
+  config:
+    import:
+      - optional:nacos:common.yml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:sc-supplier-service.yml?group=DEFAULT_GROUP&refreshEnabled=true

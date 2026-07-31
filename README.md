@@ -44,20 +44,20 @@
 | 模块 | 端口 | 职责 |
 |---|---|---|
 | `common` | — | 统一响应体 ApiResponse、BusinessException、ErrorCode |
-| `gateway-service` | 8080 | 路由转发、JWT 鉴权、限流 |
-| `auth-service` | 8081 | 用户注册、登录、JWT 签发 |
-| `supplier-service` | 8082 | 供应商主数据 CRUD |
-| `purchase-service` | 8083 | 采购订单创建、审批、状态流转 |
-| `inventory-service` | 8084 | 物料管理、库存预留、入库 |
-| `payment-service` | 8085 | 应付账款生成、审批、付款 |
+| `sc-gateway-service` | 8080 | 路由转发、JWT 鉴权、限流 |
+| `sc-auth-service` | 8081 | 用户注册、登录、JWT 签发 |
+| `sc-supplier-service` | 8082 | 供应商主数据 CRUD |
+| `sc-purchase-service` | 8083 | 采购订单创建、审批、状态流转 |
+| `sc-inventory-service` | 8084 | 物料管理、库存预留、入库 |
+| `sc-payment-service` | 8085 | 应付账款生成、审批、付款 |
 
 ## 业务流程
 
-1. 采购员在 `purchase-service` 创建采购订单（DRAFT）
-2. 审批通过后订单变为 APPROVED，调用 `inventory-service` 预留库存
-3. 货物到达，仓管员在 `inventory-service` 做入库操作
-4. 入库完成 → Kafka 事件 → `payment-service` 生成应付账款（PENDING）
-5. 财务审批付款，应付变为 APPROVED → Kafka 事件 → `purchase-service` 标记订单 SETTLED
+1. 采购员在 `sc-purchase-service` 创建采购订单（DRAFT）
+2. 审批通过后订单变为 APPROVED，调用 `sc-inventory-service` 预留库存
+3. 货物到达，仓管员在 `sc-inventory-service` 做入库操作
+4. 入库完成 → Kafka 事件 → `sc-payment-service` 生成应付账款（PENDING）
+5. 财务审批付款，应付变为 APPROVED → Kafka 事件 → `sc-purchase-service` 标记订单 SETTLED
 
 ## 快速开始
 
@@ -80,12 +80,12 @@ docker compose up -d
 mvn clean package -DskipTests
 
 # 按顺序启动（每个终端一个）
-mvn -pl auth-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
-mvn -pl supplier-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
-mvn -pl inventory-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
-mvn -pl payment-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
-mvn -pl purchase-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
-mvn -pl gateway-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
+mvn -pl sc-auth-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
+mvn -pl sc-supplier-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
+mvn -pl sc-inventory-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
+mvn -pl sc-payment-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
+mvn -pl sc-purchase-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
+mvn -pl sc-gateway-service spring-boot:run "-Dmaven.repo.local=.m2/repository"
 ```
 
 ### 4. 验证

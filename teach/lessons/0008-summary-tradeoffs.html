@@ -128,7 +128,7 @@ Feign 的 `@FeignClient`、Gateway 的 YAML 路由、Seata 的 `@GlobalTransacti
 
 <ol>
   <li><strong>在项目里实际集成 Resilience4j</strong>——给已有的 Feign 客户端加上熔断和 Fallback</li>
-  <li><strong>写一个 Kafka Producer 和 Consumer</strong>——让 inventory-service 入库后发事件，payment-service 消费生成应付账款</li>
+  <li><strong>写一个 Kafka Producer 和 Consumer</strong>——让 sc-inventory-service 入库后发事件，sc-payment-service 消费生成应付账款</li>
   <li><strong>引入 Seata AT</strong>——让采购单审批 + 库存预留变成一个全局事务</li>
   <li><strong>阅读 CONTEXT.md 中的 Ubiquitous Language 表</strong>——理解领域建模如何影响服务拆分</li>
 </ol>

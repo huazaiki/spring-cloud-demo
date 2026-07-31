@@ -14,16 +14,16 @@
 <h2>从超时说起</h2>
 
 <p>
-purchase-service 调 inventory-service 预留库存。项目里已经配了 Feign 超时：
+sc-purchase-service 调 sc-inventory-service 预留库存。项目里已经配了 Feign 超时：
 </p>
 
-<pre># purchase-service application.yml
+<pre># sc-purchase-service application.yml
 spring.cloud.openfeign.client.config.default:
   connect-timeout: 5000   # 建立连接最多等 5 秒
   read-timeout: 5000      # 等待响应最多等 5 秒</pre>
 
 <p>
-5 秒一个请求。假设 inventory-service 因为数据库锁等待，每个请求要卡 5 秒才超时。Tomcat 默认 200 个线程——200 个并发请求都打到一个慢服务上，<strong>200 × 5 秒 = 整个 purchase-service 的线程池被耗尽</strong>。此时不仅是调库存的请求失败——连查订单列表这种不依赖 inventory 的请求也拿不到线程。
+5 秒一个请求。假设 sc-inventory-service 因为数据库锁等待，每个请求要卡 5 秒才超时。Tomcat 默认 200 个线程——200 个并发请求都打到一个慢服务上，<strong>200 × 5 秒 = 整个 sc-purchase-service 的线程池被耗尽</strong>。此时不仅是调库存的请求失败——连查订单列表这种不依赖 inventory 的请求也拿不到线程。
 </p>
 
 <p>
@@ -139,7 +139,7 @@ public void reserveStockFallback(Map body, Exception e) {
 </ol>
 
 <div class="box box-info">
-<strong>Fallback 和 Kafka 的天然配合：</strong>Fallback 把"预留库存"从同步调用降级为"写入一条待处理消息"→ Kafka → inventory-service 恢复后消费这个消息完成预留。断路器断开期间，没有请求丢失，只是处理时机延后了。
+<strong>Fallback 和 Kafka 的天然配合：</strong>Fallback 把"预留库存"从同步调用降级为"写入一条待处理消息"→ Kafka → sc-inventory-service 恢复后消费这个消息完成预留。断路器断开期间，没有请求丢失，只是处理时机延后了。
 </div>
 
 <h2>回到设计层面：信任与防御</h2>

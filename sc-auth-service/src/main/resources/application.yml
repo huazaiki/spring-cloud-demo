@@ -1,0 +1,16 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: sc-auth-service
+  cloud:
+    nacos:
+      server-addr: localhost:8848
+      config:
+        group: DEFAULT_GROUP
+        file-extension: yml
+  config:
+    import:
+      - optional:nacos:common.yml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:sc-auth-service.yml?group=DEFAULT_GROUP&refreshEnabled=true

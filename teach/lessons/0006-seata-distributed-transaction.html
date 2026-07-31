@@ -26,7 +26,7 @@ approveOrder(orderId):
 </div>
 
 <p>
-但在微服务里，① 在 purchase-service 的数据库（purchase_db），② 通过 Feign 调 inventory-service 操作另一个数据库（inventory_db）。两个 <code>@Transactional</code> 互不感知。② 失败了，① 已经提交了——<strong>数据不一致</strong>。
+但在微服务里，① 在 sc-purchase-service 的数据库（purchase_db），② 通过 Feign 调 sc-inventory-service 操作另一个数据库（inventory_db）。两个 <code>@Transactional</code> 互不感知。② 失败了，① 已经提交了——<strong>数据不一致</strong>。
 </p>
 
 <div class="box box-warn">
@@ -74,15 +74,15 @@ Seata 的 AT（Automatic Transaction）模式解决这个问题的方式出奇�
 </table>
 
 <p>
-purchase-service 的 <code>approveOrder</code> 方法加 <code>@GlobalTransactional</code> 后，它变成 TM。purchase-service 和 inventory-service 各自的数据库操作充当 RM。TC 是独立的 Seata Server，三者通过 netty 通信。
+sc-purchase-service 的 <code>approveOrder</code> 方法加 <code>@GlobalTransactional</code> 后，它变成 TM。sc-purchase-service 和 sc-inventory-service 各自的数据库操作充当 RM。TC 是独立的 Seata Server，三者通过 netty 通信。
 </p>
 
 <div class="diagram">
-purchase-service (TM)
+sc-purchase-service (TM)
   │
   ├─→ 自己的 DB (RM)    → undo_log 记录 purchase 的改动
   │
-  └─→ Feign → inventory-service → 它的 DB (RM) → undo_log 记录 inventory 的改动
+  └─→ Feign → sc-inventory-service → 它的 DB (RM) → undo_log 记录 inventory 的改动
 
               Seata Server (TC)
               协调以上所有 RM 的提交/回滚
