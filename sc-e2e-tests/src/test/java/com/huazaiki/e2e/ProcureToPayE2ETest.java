@@ -327,13 +327,15 @@ class ProcureToPayE2ETest {
         jdbcUpdate("auth_db",
                 "INSERT INTO sys_user_role (id, user_id, role_id) VALUES (9001, " + adminUserId + ", 1)");
 
-        // 2. 部门
-        assertEquals(200, code("POST", "/api/v1/depts", null,
-                Map.of("deptCode", "D1", "deptName", "采购一部")));
-        deptId = findIdByField("GET", "/api/v1/depts", null, "deptCode", "D1");
+        // 2. 先登录 admin（已分配 ADMIN 角色）
         adminToken = token("admin", "Passw0rd");
 
-        // 3. 建用户并分配角色（角色 id：PURCHASER=2, PURCHASE_MANAGER=3, DEPT_MANAGER=4, WAREHOUSE=5, FINANCE=6）
+        // 3. 部门
+        assertEquals(200, code("POST", "/api/v1/depts", adminToken,
+                Map.of("deptCode", "D1", "deptName", "采购一部")));
+        deptId = findIdByField("GET", "/api/v1/depts", adminToken, "deptCode", "D1");
+
+        // 4. 建用户并分配角色（角色 id：PURCHASER=2, PURCHASE_MANAGER=3, DEPT_MANAGER=4, WAREHOUSE=5, FINANCE=6）
         createUser("purchaser", 2);
         createUser("deptmgr", 4);
         createUser("purchmgr", 3);
@@ -421,10 +423,10 @@ class ProcureToPayE2ETest {
     }
 
     private static void createUser(String username, int roleId) throws Exception {
-        assertEquals(200, code("POST", "/api/v1/users", null,
+        assertEquals(200, code("POST", "/api/v1/users", adminToken,
                 Map.of("username", username, "password", "Passw0rd", "deptId", deptId.toString())));
-        Long uid = findIdByField("GET", "/api/v1/users", null, "username", username);
-        assertEquals(200, code("POST", "/api/v1/users/" + uid + "/roles", null, Map.of("roleIds", List.of(roleId))));
+        Long uid = findIdByField("GET", "/api/v1/users", adminToken, "username", username);
+        assertEquals(200, code("POST", "/api/v1/users/" + uid + "/roles", adminToken, Map.of("roleIds", List.of(roleId))));
     }
 
     private static void approveFirstTask(String token, String bizType, Long bizId) throws Exception {
