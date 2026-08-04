@@ -53,8 +53,7 @@ class ProcureToPayE2ETest {
     static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0")
             .withDatabaseName("e2e")
             .withUsername("test")
-            .withPassword("test")
-            .withInitScript("e2e-init.sql");
+            .withPassword("test");
 
     @Container
     static final KafkaContainer KAFKA = new KafkaContainer(
@@ -87,8 +86,23 @@ class ProcureToPayE2ETest {
     // ---------------- 基础设施 ----------------
 
     private static void createDatabasesIfNeeded() throws Exception {
-        // e2e-init.sql 已创建 5 库；确保 MySQL 就绪
-        MYSQL.isRunning();
+        // 容器就绪后以 root 创建各服务数据库（test 用户无建库权限）
+        String url = "jdbc:mysql://%s:%d/?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai"
+                .formatted(MYSQL.getHost(), MYSQL.getMappedPort(3306));
+        try (Connection c = DriverManager.getConnection(url, "root", "test");
+             Statement st = c.createStatement()) {
+            for (String db : List.of("auth_db", "supplier_db", "purchase_db", "inventory_db", "payment_db")) {
+                st.execute("CREATE DATABASE IF NOT EXISTS " + db);
+            }
+        } catch (java.sql.SQLException e) {
+            // root 密码可能等于容器密码
+            try (Connection c = DriverManager.getConnection(url, "root", MYSQL.getPassword());
+                 Statement st = c.createStatement()) {
+                for (String db : List.of("auth_db", "supplier_db", "purchase_db", "inventory_db", "payment_db")) {
+                    st.execute("CREATE DATABASE IF NOT EXISTS " + db);
+                }
+            }
+        }
     }
 
     private static void startServices() {
