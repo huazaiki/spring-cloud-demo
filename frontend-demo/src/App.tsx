@@ -15,6 +15,7 @@ import RequisitionList from './pages/RequisitionList';
 import ApprovalTasks from './pages/ApprovalTasks';
 import Receives from './pages/Receives';
 import Finance from './pages/Finance';
+import System from './pages/System';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -44,6 +45,7 @@ export default function App() {
               <Route path="approval-tasks" element={<ApprovalTasks />} />
               <Route path="receives" element={<Receives />} />
               <Route path="finance" element={<Finance />} />
+              <Route path="system" element={<System />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
