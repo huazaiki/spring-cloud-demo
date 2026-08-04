@@ -134,27 +134,32 @@ class ProcureToPayE2ETest {
         Map<String, Object> auth = new HashMap<>(base);
         auth.put("server.port", AUTH);
         auth.put("spring.datasource.url", String.format(url, host, port, "auth_db"));
+        auth.put("spring.flyway.locations", "classpath:db/migration/auth-service");
         start("auth", AuthServiceApplication.class, auth);
 
         Map<String, Object> supplier = new HashMap<>(base);
         supplier.put("server.port", SUP);
         supplier.put("spring.datasource.url", String.format(url, host, port, "supplier_db"));
+        supplier.put("spring.flyway.locations", "classpath:db/migration/supplier-service");
         start("supplier", SupplierServiceApplication.class, supplier);
 
         Map<String, Object> purchase = new HashMap<>(base);
         purchase.put("server.port", PUR);
         purchase.put("spring.datasource.url", String.format(url, host, port, "purchase_db"));
+        purchase.put("spring.flyway.locations", "classpath:db/migration/purchase-service");
         purchase.put("spring.cloud.openfeign.circuitbreaker.enabled", false);
         start("purchase", PurchaseServiceApplication.class, purchase);
 
         Map<String, Object> inventory = new HashMap<>(base);
         inventory.put("server.port", INV);
         inventory.put("spring.datasource.url", String.format(url, host, port, "inventory_db"));
+        inventory.put("spring.flyway.locations", "classpath:db/migration/inventory-service");
         start("inventory", InventoryServiceApplication.class, inventory);
 
         Map<String, Object> payment = new HashMap<>(base);
         payment.put("server.port", PAY);
         payment.put("spring.datasource.url", String.format(url, host, port, "payment_db"));
+        payment.put("spring.flyway.locations", "classpath:db/migration/payment-service");
         start("payment", PaymentServiceApplication.class, payment);
 
         Map<String, Object> gateway = new HashMap<>(base);
