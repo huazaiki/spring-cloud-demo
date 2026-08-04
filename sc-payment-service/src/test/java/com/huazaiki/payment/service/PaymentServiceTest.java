@@ -1,7 +1,13 @@
 package com.huazaiki.payment.service;
 
 import com.huazaiki.payment.entity.Payable;
+import com.huazaiki.payment.feign.PurchaseFeignClient;
+import com.huazaiki.payment.mapper.InvoiceItemMapper;
+import com.huazaiki.payment.mapper.InvoiceMapper;
+import com.huazaiki.payment.mapper.InvoiceMatchMapper;
 import com.huazaiki.payment.mapper.PayableMapper;
+import com.huazaiki.payment.mapper.PayablePaymentMapper;
+import com.huazaiki.payment.mapper.PaymentMapper;
 import com.huazaiki.payment.outbox.OutboxService;
 import com.huazaiki.common.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +29,12 @@ import static org.mockito.Mockito.*;
 class PaymentServiceTest {
 
     @Mock private PayableMapper payableMapper;
+    @Mock private InvoiceMapper invoiceMapper;
+    @Mock private InvoiceItemMapper invoiceItemMapper;
+    @Mock private InvoiceMatchMapper invoiceMatchMapper;
+    @Mock private PaymentMapper paymentMapper;
+    @Mock private PayablePaymentMapper payablePaymentMapper;
+    @Mock private PurchaseFeignClient purchaseClient;
     @Mock private OutboxService outboxService;
     @InjectMocks private PaymentService paymentService;
 
