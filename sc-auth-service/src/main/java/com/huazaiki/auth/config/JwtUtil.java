@@ -7,6 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 
 public class JwtUtil {
 
@@ -25,6 +26,24 @@ public class JwtUtil {
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("role", role)
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(key)
+                .compact();
+    }
+
+    /**
+     * RBAC 版：JWT 携带身份（userId/deptId/roles/permissions），网关透传为 X-User-* 头。
+     */
+    public String generateToken(Long userId, Long deptId, List<String> roles, List<String> permissions) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + expirationMs);
+
+        return Jwts.builder()
+                .subject(userId.toString())
+                .claim("deptId", deptId == null ? 0L : deptId)
+                .claim("roles", roles == null ? List.of() : roles)
+                .claim("permissions", permissions == null ? List.of() : permissions)
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(key)

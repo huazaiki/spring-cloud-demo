@@ -27,8 +27,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .anyRequest().authenticated());
+                        .requestMatchers("/api/v1/**").permitAll()); // 网关为安全边界，服务内由 PermissionInterceptor 鉴权
         return http.build();
     }
 

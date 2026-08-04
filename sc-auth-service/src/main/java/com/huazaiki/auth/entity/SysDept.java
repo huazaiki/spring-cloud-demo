@@ -6,29 +6,29 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDateTime;
 
-@TableName("sys_user")
-public class SysUser {
+@TableName("sys_dept")
+public class SysDept {
 
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
-    private String username;
-    private String passwordHash;
-    private String role;
-    private Long deptId;
+    private Long parentId;
+    private String deptCode;
+    private String deptName;
+    private Integer sortNo;
     private String status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-    public String getPasswordHash() { return passwordHash; }
-    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
-    public Long getDeptId() { return deptId; }
-    public void setDeptId(Long deptId) { this.deptId = deptId; }
+    public Long getParentId() { return parentId; }
+    public void setParentId(Long parentId) { this.parentId = parentId; }
+    public String getDeptCode() { return deptCode; }
+    public void setDeptCode(String deptCode) { this.deptCode = deptCode; }
+    public String getDeptName() { return deptName; }
+    public void setDeptName(String deptName) { this.deptName = deptName; }
+    public Integer getSortNo() { return sortNo; }
+    public void setSortNo(Integer sortNo) { this.sortNo = sortNo; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public LocalDateTime getCreateTime() { return createTime; }

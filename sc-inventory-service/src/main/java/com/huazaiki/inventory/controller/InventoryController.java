@@ -1,6 +1,7 @@
 package com.huazaiki.inventory.controller;
 
 import com.huazaiki.common.api.ApiResponse;
+import com.huazaiki.common.security.RequirePermission;
 import com.huazaiki.inventory.entity.InventoryLedger;
 import com.huazaiki.inventory.entity.Item;
 import com.huazaiki.inventory.service.InventoryService;
@@ -33,6 +34,7 @@ public class InventoryController {
         return ApiResponse.success(item);
     }
 
+    @RequirePermission("receive:create")
     @PostMapping("/receive")
     public ApiResponse<Void> receive(@RequestBody Map<String, Object> body) {
         Long orderId = Long.valueOf(body.get("orderId").toString());
@@ -42,6 +44,7 @@ public class InventoryController {
         return ApiResponse.success();
     }
 
+    // 内部 Feign（purchase→inventory），不做权限注解
     @PostMapping("/reserve")
     public ApiResponse<Void> reserve(@RequestBody Map<String, Object> body) {
         Long itemId = Long.valueOf(body.get("itemId").toString());
@@ -51,6 +54,7 @@ public class InventoryController {
         return ApiResponse.success();
     }
 
+    // 内部 Feign / 事件消费，不做权限注解
     @PostMapping("/release")
     public ApiResponse<Void> release(@RequestBody Map<String, Object> body) {
         Long itemId = Long.valueOf(body.get("itemId").toString());
@@ -60,6 +64,7 @@ public class InventoryController {
         return ApiResponse.success();
     }
 
+    @RequirePermission("inventory:ledger")
     @GetMapping("/ledger")
     public ApiResponse<List<InventoryLedger>> ledger(@RequestParam(required = false) Long itemId) {
         return ApiResponse.success(inventoryService.listLedger(itemId));

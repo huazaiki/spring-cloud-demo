@@ -1,6 +1,7 @@
 package com.huazaiki.purchase.controller;
 
 import com.huazaiki.common.api.ApiResponse;
+import com.huazaiki.common.security.RequirePermission;
 import com.huazaiki.purchase.entity.PurchaseOrder;
 import com.huazaiki.purchase.service.OrderService;
 import com.huazaiki.purchase.service.OrderService.ItemLine;
@@ -31,6 +32,7 @@ public class PurchaseController {
         return ApiResponse.success(orderService.getById(id));
     }
 
+    @RequirePermission("po:create")
     @PostMapping
     public ApiResponse<PurchaseOrder> create(@RequestBody Map<String, Object> body) {
         Long supplierId = Long.valueOf(body.get("supplierId").toString());
@@ -51,12 +53,14 @@ public class PurchaseController {
         return ApiResponse.success(orderService.createOrder(supplierId, items));
     }
 
+    @RequirePermission("approval:task:approve")
     @PutMapping("/{id}/approve")
     public ApiResponse<Void> approve(@PathVariable Long id) {
         orderService.approveOrder(id);
         return ApiResponse.success();
     }
 
+    @RequirePermission("po:update")
     @PostMapping("/{id}/cancel")
     public ApiResponse<Void> cancel(@PathVariable Long id) {
         orderService.cancelOrder(id);

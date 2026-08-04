@@ -2,13 +2,12 @@ package com.huazaiki.auth.controller;
 
 import com.huazaiki.auth.dto.LoginRequest;
 import com.huazaiki.auth.dto.LoginResponse;
+import com.huazaiki.auth.dto.MeResponse;
 import com.huazaiki.auth.dto.RegisterRequest;
 import com.huazaiki.auth.service.AuthService;
 import com.huazaiki.common.api.ApiResponse;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.huazaiki.common.exception.BusinessException;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -30,5 +29,13 @@ public class AuthController {
     public ApiResponse<LoginResponse> login(@RequestBody LoginRequest request) {
         String token = authService.login(request.getUsername(), request.getPassword());
         return ApiResponse.success(new LoginResponse(token));
+    }
+
+    @GetMapping("/me")
+    public ApiResponse<MeResponse> me(@RequestHeader(value = "X-User-Id", required = false) String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new BusinessException(() -> 401, "Unauthorized");
+        }
+        return ApiResponse.success(authService.me(Long.valueOf(userId)));
     }
 }

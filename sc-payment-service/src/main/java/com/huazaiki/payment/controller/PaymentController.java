@@ -1,6 +1,7 @@
 package com.huazaiki.payment.controller;
 
 import com.huazaiki.common.api.ApiResponse;
+import com.huazaiki.common.security.RequirePermission;
 import com.huazaiki.payment.entity.Payable;
 import com.huazaiki.payment.service.PaymentService;
 import org.springframework.web.bind.annotation.*;
@@ -32,12 +33,14 @@ public class PaymentController {
         return ApiResponse.success(paymentService.createPayable(orderId, supplierId, amount));
     }
 
+    @RequirePermission("approval:task:approve")
     @PutMapping("/{id}/approve")
     public ApiResponse<Void> approve(@PathVariable Long id) {
         paymentService.approvePayment(id);
         return ApiResponse.success();
     }
 
+    @RequirePermission("payment:pay")
     @PutMapping("/{id}/settle")
     public ApiResponse<Void> settle(@PathVariable Long id) {
         paymentService.settlePayable(id);
