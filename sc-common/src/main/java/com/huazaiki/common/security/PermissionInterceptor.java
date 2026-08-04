@@ -16,6 +16,10 @@ public class PermissionInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        String userIdHeader = request.getHeader("X-User-Id");
+        if (userIdHeader != null && !userIdHeader.isBlank()) {
+            SecurityContext.setUserId(Long.valueOf(userIdHeader));
+        }
         if (!(handler instanceof HandlerMethod handlerMethod)) {
             return true;
         }
@@ -40,5 +44,10 @@ public class PermissionInterceptor implements HandlerInterceptor {
             return false;
         }
         return true;
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        SecurityContext.clear();
     }
 }

@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.huazaiki.inventory", "com.huazaiki.common.audit", "com.huazaiki.common.security"})
 @EnableScheduling
 @EnableKafka
 public class InventoryServiceApplication {

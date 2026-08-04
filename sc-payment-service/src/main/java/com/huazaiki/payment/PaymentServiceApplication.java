@@ -6,7 +6,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.huazaiki.payment", "com.huazaiki.common.audit", "com.huazaiki.common.security"})
 @EnableFeignClients
 @EnableScheduling
 @EnableKafka
