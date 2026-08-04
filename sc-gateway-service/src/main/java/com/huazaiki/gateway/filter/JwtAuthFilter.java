@@ -1,6 +1,8 @@
 package com.huazaiki.gateway.filter;
 
 import io.jsonwebtoken.Claims;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +21,8 @@ import java.util.List;
 
 @Component
 public class JwtAuthFilter implements GlobalFilter, Ordered {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);
 
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/v1/auth/register",
@@ -66,6 +70,7 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
                     .header("X-User-Roles", roles != null ? String.join(",", roles) : "")
                     .header("X-User-Permissions", permissions != null ? String.join(",", permissions) : "");
         } catch (Exception e) {
+            log.error("JWT auth failed for path {}: {}", path, e.getMessage(), e);
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
