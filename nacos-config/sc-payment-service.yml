@@ -25,17 +25,11 @@ seata:
   application-id: sc-payment-service
   tx-service-group: sc_tx_group
   registry:
-    type: nacos
-    nacos:
-      application: seata-server
-      server-addr: localhost:8848
-      group: SEATA_GROUP
-      namespace: ""
-      cluster: default
-      username: ""
-      password: ""
+    type: file
   config:
     type: file
   service:
     vgroup-mapping:
       sc_tx_group: default
+    grouplist:
+      default: 127.0.0.1:8091

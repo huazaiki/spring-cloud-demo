@@ -62,8 +62,9 @@ services:
     environment:
       SEATA_PORT: 8091
       SEATA_IP: 127.0.0.1
+      LOG_HOME: /seata-server
     volumes:
-      - ./docker/seata/resources:/seata-server/resources
+      - ./docker/seata/resources/application.yml:/seata-server/resources/application.yml
     depends_on:
       nacos:
         condition: service_started
