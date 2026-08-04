@@ -1,6 +1,6 @@
 import client from './client';
 
-interface PayVoucherPayload { supplierId: number; amount: number; method?: string; payableIds: number[]; }
+interface PayVoucherPayload { supplierId: number | string; amount: number; method?: string; payableIds: (number | string)[]; }
 
 export async function listPaymentVouchers() {
   const res = await client.get('/api/v1/payment-vouchers');

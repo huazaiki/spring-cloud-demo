@@ -31,9 +31,9 @@ export default function Receives() {
     setSubmitting(true);
     try {
       const items = ((values as { items?: Array<{ orderItemId: string; itemId: string; receivedQty: number }> }).items || []).map((it) => ({
-        orderItemId: Number(it.orderItemId), itemId: Number(it.itemId), receivedQty: it.receivedQty,
+        orderItemId: it.orderItemId as unknown as number, itemId: it.itemId as unknown as number, receivedQty: it.receivedQty,
       }));
-      await createReceive({ orderId: Number((values as { orderId: string }).orderId), items });
+      await createReceive({ orderId: (values as { orderId: string }).orderId, items });
       message.success('收货单登记成功');
       setCreateOpen(false); form.resetFields(); fetchList();
     } catch (err: unknown) {
@@ -71,7 +71,7 @@ export default function Receives() {
           <Button size="small" type="primary" icon={<ImportOutlined />} loading={actingId === r.id}
             onClick={async () => {
               setActingId(r.id);
-              try { await stockIn(Number(r.id)); message.success('入库成功'); fetchList(); }
+              try { await stockIn(r.id); message.success('入库成功'); fetchList(); }
               catch (err: unknown) { message.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || '入库失败'); }
               finally { setActingId(null); }
             }}>入库</Button>

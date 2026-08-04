@@ -32,8 +32,8 @@ export default function Finance() {
     setSubmitting(true);
     try {
       await createInvoice({
-        supplierId: Number((values as { supplierId: string }).supplierId),
-        orderId: values.orderId ? Number(values.orderId) : undefined,
+        supplierId: (values as { supplierId: string }).supplierId,
+        orderId: values.orderId ? (values.orderId as string) : undefined,
         invoiceNo: values.invoiceNo as string,
         invoiceDate: (values.invoiceDate as unknown as dayjs.Dayjs).format('YYYY-MM-DD'),
         totalAmount: Number((values as { totalAmount: number }).totalAmount),
@@ -48,9 +48,9 @@ export default function Finance() {
   const handlePay = async (values: Record<string, unknown>) => {
     setSubmitting(true);
     try {
-      const payableIds = String(values.payableIds).split(',').map((s) => Number(s.trim())).filter((n) => !Number.isNaN(n));
+      const payableIds = String(values.payableIds).split(',').map((s) => s.trim()).filter((s) => s.length > 0);
       await payVoucher({
-        supplierId: Number((values as { supplierId: string }).supplierId),
+        supplierId: (values as { supplierId: string }).supplierId,
         amount: Number((values as { amount: number }).amount),
         method: (values.method as string) || 'TRANSFER',
         payableIds,
@@ -69,7 +69,7 @@ export default function Finance() {
     { title: '操作', width: 130, render: (_: unknown, r: { id: string; status: string }) => (
       hasPermission('invoice:match') && r.status === 'REGISTERED' ? (
         <Button size="small" icon={<CheckOutlined />} onClick={async () => {
-          try { await matchInvoice(Number(r.id)); message.success('匹配完成'); fetchAll(); }
+          try { await matchInvoice(r.id); message.success('匹配完成'); fetchAll(); }
           catch (err: unknown) { message.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || '匹配失败'); }
         }}>三单匹配</Button>
       ) : null

@@ -46,9 +46,9 @@ export default function OrderList() {
     setSubmitting(true);
     try {
       const items = ((values as { items?: Array<{ itemId: string; itemName: string; quantity: number; unitPrice: number }> }).items || []).map((it) => ({
-        itemId: Number(it.itemId), itemName: it.itemName, quantity: it.quantity, unitPrice: it.unitPrice, amount: it.quantity * it.unitPrice,
+        itemId: it.itemId as unknown as number, itemName: it.itemName, quantity: it.quantity, unitPrice: it.unitPrice, amount: it.quantity * it.unitPrice,
       }));
-      await createOrder({ supplierId: Number((values as { supplierId: string }).supplierId), items });
+      await createOrder({ supplierId: (values as { supplierId: string }).supplierId, items });
       message.success('订单创建成功');
       setModalOpen(false); form.resetFields();
       fetchOrders();
@@ -61,7 +61,7 @@ export default function OrderList() {
   const handleApprove = async (id: string) => {
     setApprovingId(id);
     try {
-      await approveOrder(Number(id));
+      await approveOrder(id);
       message.success('审批成功');
       fetchOrders();
     } catch (err: unknown) {
@@ -71,12 +71,12 @@ export default function OrderList() {
   };
 
   const handleCancel = async (id: string) => {
-    try { await cancelOrder(Number(id)); message.success('订单已取消'); fetchOrders(); }
+    try { await cancelOrder(id); message.success('订单已取消'); fetchOrders(); }
     catch (err: unknown) { message.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || '取消失败'); }
   };
 
   const handleAdvance = async (id: string, status: string) => {
-    try { await advanceOrderStatus(Number(id), status); message.success('状态已更新'); fetchOrders(); }
+    try { await advanceOrderStatus(id, status); message.success('状态已更新'); fetchOrders(); }
     catch (err: unknown) { message.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || '状态更新失败'); }
   };
   const columns = [

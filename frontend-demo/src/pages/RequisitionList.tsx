@@ -41,10 +41,10 @@ export default function RequisitionList() {
     setSubmitting(true);
     try {
       const items = ((values as { items?: Array<{ itemId: string; itemName: string; quantity: number; amount?: number }> }).items || []).map((it) => ({
-        itemId: Number(it.itemId), itemName: it.itemName, quantity: it.quantity, amount: it.amount ?? 0,
+        itemId: it.itemId as unknown as number, itemName: it.itemName, quantity: it.quantity, amount: it.amount ?? 0,
       }));
       await createRequisition({
-        supplierId: values.supplierId ? Number(values.supplierId) : undefined,
+        supplierId: values.supplierId ? (values.supplierId as string) : undefined,
         expectedDate: values.expectedDate ? (values.expectedDate as unknown as dayjs.Dayjs).format('YYYY-MM-DD') : undefined,
         purpose: values.purpose as string, items,
       });
@@ -69,13 +69,13 @@ export default function RequisitionList() {
     { title: '操作', width: 260, render: (_: unknown, r: Requisition) => (
       <Space>
         {hasPermission('pr:submit') && r.status === 'DRAFT' && (
-          <Button size="small" type="primary" icon={<SendOutlined />} onClick={() => act(() => submitRequisition(Number(r.id)), '已提交审批')}>提交</Button>
+          <Button size="small" type="primary" icon={<SendOutlined />} onClick={() => act(() => submitRequisition(r.id), '已提交审批')}>提交</Button>
         )}
         {hasPermission('pr:convert') && r.status === 'APPROVED' && (
-          <Button size="small" icon={<CheckOutlined />} onClick={() => act(() => convertRequisition(Number(r.id)), '已转采购订单')}>转订单</Button>
+          <Button size="small" icon={<CheckOutlined />} onClick={() => act(() => convertRequisition(r.id), '已转采购订单')}>转订单</Button>
         )}
         {hasPermission('pr:update') && ['DRAFT', 'SUBMITTED', 'APPROVED'].includes(r.status) && (
-          <Button size="small" danger icon={<CloseOutlined />} onClick={() => act(() => cancelRequisition(Number(r.id)), '已取消')}>取消</Button>
+          <Button size="small" danger icon={<CloseOutlined />} onClick={() => act(() => cancelRequisition(r.id), '已取消')}>取消</Button>
         )}
       </Space>
     )},

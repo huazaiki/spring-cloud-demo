@@ -28,8 +28,8 @@ export default function ApprovalTasks() {
   const doAct = async (taskId: string, type: 'approve' | 'reject') => {
     setActingId(taskId);
     try {
-      if (type === 'approve') await approveTask(Number(taskId), opinion || undefined);
-      else await rejectTask(Number(taskId), opinion || '驳回');
+      if (type === 'approve') await approveTask(taskId, opinion || undefined);
+      else await rejectTask(taskId, opinion || '驳回');
       message.success(type === 'approve' ? '已通过' : '已驳回');
       setModal(null); setOpinion(''); fetchTasks();
     } catch (err: unknown) {

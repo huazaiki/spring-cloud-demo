@@ -50,7 +50,7 @@ export default function System() {
   const handleCreateUser = async (values: Record<string, unknown>) => {
     setSubmitting(true);
     try {
-      await createUser({ username: values.username as string, password: values.password as string, deptId: values.deptId ? Number(values.deptId) : undefined });
+      await createUser({ username: values.username as string, password: values.password as string, deptId: values.deptId ? (values.deptId as string) : undefined });
       message.success('用户已创建'); setUserOpen(false); uForm.resetFields(); fetchAll();
     } catch (err: unknown) { message.error(errMsg(err, '创建失败')); } finally { setSubmitting(false); }
   };
@@ -59,7 +59,7 @@ export default function System() {
     if (!roleForUser) return;
     setSubmitting(true);
     try {
-      await assignRoles(Number(roleForUser.id), (values.roleIds as number[] || []).map(Number));
+      await assignRoles(roleForUser.id, (values.roleIds as (number | string)[] || []));
       message.success('角色已分配'); setRoleForUser(null); pForm.resetFields();
     } catch (err: unknown) { message.error(errMsg(err, '分配失败')); } finally { setSubmitting(false); }
   };
@@ -67,7 +67,7 @@ export default function System() {
   const handleCreateDept = async (values: Record<string, unknown>) => {
     setSubmitting(true);
     try {
-      await createDept({ deptCode: values.deptCode as string, deptName: values.deptName as string, parentId: values.parentId ? Number(values.parentId) : 0 });
+      await createDept({ deptCode: values.deptCode as string, deptName: values.deptName as string, parentId: values.parentId ? (values.parentId as string) : 0 });
       message.success('部门已创建'); setDeptOpen(false); dForm.resetFields(); fetchAll();
     } catch (err: unknown) { message.error(errMsg(err, '创建失败')); } finally { setSubmitting(false); }
   };
@@ -84,7 +84,7 @@ export default function System() {
     if (!permOpen) return;
     setSubmitting(true);
     try {
-      await assignRolePermissions(Number(permOpen.id), (values.permissionIds as number[] || []).map(Number));
+      await assignRolePermissions(permOpen.id, (values.permissionIds as (number | string)[] || []));
       message.success('权限已配置'); setPermOpen(null);
     } catch (err: unknown) { message.error(errMsg(err, '配置失败')); } finally { setSubmitting(false); }
   };

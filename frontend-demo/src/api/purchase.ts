@@ -1,7 +1,7 @@
 import client from './client';
 
 interface OrderItem {
-  itemId: number;
+  itemId: number | string;
   itemName: string;
   quantity: number;
   unitPrice: number;
@@ -9,7 +9,7 @@ interface OrderItem {
 }
 
 interface CreateOrderPayload {
-  supplierId: number;
+  supplierId: number | string;
   items: OrderItem[];
 }
 
@@ -28,15 +28,15 @@ export async function getOrder(id: number) {
   return res.data;
 }
 
-export async function approveOrder(id: number) {
+export async function approveOrder(id: number | string) {
   const res = await client.put('/api/v1/orders/' + id + '/approve');
   return res.data;
 }
-export async function cancelOrder(id: number) {
+export async function cancelOrder(id: number | string) {
   const res = await client.post(`/api/v1/orders/${id}/cancel`);
   return res.data;
 }
-export async function advanceOrderStatus(id: number, status: string) {
+export async function advanceOrderStatus(id: number | string, status: string) {
   const res = await client.put(`/api/v1/orders/${id}/status`, { status });
   return res.data;
 }
