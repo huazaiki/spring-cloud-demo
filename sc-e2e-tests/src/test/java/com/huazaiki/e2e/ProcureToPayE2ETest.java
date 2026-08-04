@@ -3,7 +3,6 @@ package com.huazaiki.e2e;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huazaiki.auth.AuthServiceApplication;
-import com.huazaiki.gateway.GatewayServiceApplication;
 import com.huazaiki.inventory.InventoryServiceApplication;
 import com.huazaiki.payment.PaymentServiceApplication;
 import com.huazaiki.purchase.PurchaseServiceApplication;
