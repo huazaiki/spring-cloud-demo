@@ -276,7 +276,9 @@ class ProcureToPayE2ETest {
         HttpResponse<String> resp = call("POST", "/api/v1/auth/login", null,
                 Map.of("username", username, "password", password));
         assertEquals(200, resp.statusCode(), "login " + username + " failed: " + resp.body());
-        return OM.readTree(resp.body()).path("data").path("token").asText();
+        String tok = OM.readTree(resp.body()).path("data").path("token").asText();
+        System.out.println("[E2E] token(" + username + ") len=" + tok.length());
+        return tok;
     }
 
     private static Long findIdByField(String method, String path, String token, String field, String value) throws Exception {
@@ -350,6 +352,9 @@ class ProcureToPayE2ETest {
         // 4. 物料 + 库存期初（JDBC 直接建行）
         HttpResponse<String> itemResp = call("POST", "/api/v1/inventory/items", purchaserToken,
                 Map.of("name", "Steel Rod", "spec", "10mm", "unit", "pcs", "sku", "SR-10"));
+        if (itemResp.statusCode() != 200) {
+            System.out.println("[E2E] item create failed: " + itemResp.statusCode() + " " + itemResp.body());
+        }
         assertEquals(200, itemResp.statusCode(), itemResp.body());
         itemId = OM.readTree(itemResp.body()).path("data").path("id").asLong();
         jdbcUpdate("inventory_db",
