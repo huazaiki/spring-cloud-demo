@@ -1,6 +1,7 @@
 package com.huazaiki.purchase.service;
 
 import com.huazaiki.common.api.ApiResponse;
+import com.huazaiki.common.event.KafkaTopics;
 import com.huazaiki.common.exception.BusinessException;
 import com.huazaiki.purchase.entity.PurchaseOrder;
 import com.huazaiki.purchase.entity.PurchaseOrderItem;
@@ -8,6 +9,7 @@ import com.huazaiki.purchase.feign.InventoryFeignClient;
 import com.huazaiki.purchase.feign.SupplierFeignClient;
 import com.huazaiki.purchase.mapper.PurchaseOrderItemMapper;
 import com.huazaiki.purchase.mapper.PurchaseOrderMapper;
+import com.huazaiki.purchase.outbox.OutboxService;
 import org.apache.seata.spring.annotation.GlobalTransactional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,15 +30,18 @@ public class OrderService {
     private final PurchaseOrderItemMapper itemMapper;
     private final InventoryFeignClient inventoryClient;
     private final SupplierFeignClient supplierClient;
+    private final OutboxService outboxService;
 
     public OrderService(PurchaseOrderMapper orderMapper,
                         PurchaseOrderItemMapper itemMapper,
                         InventoryFeignClient inventoryClient,
-                        SupplierFeignClient supplierClient) {
+                        SupplierFeignClient supplierClient,
+                        OutboxService outboxService) {
         this.orderMapper = orderMapper;
         this.itemMapper = itemMapper;
         this.inventoryClient = inventoryClient;
         this.supplierClient = supplierClient;
+        this.outboxService = outboxService;
     }
 
     public List<PurchaseOrder> listOrders() {
@@ -119,6 +125,36 @@ public class OrderService {
                         "Stock reservation failed for item " + item.getItemId() + ": " + resp.getMessage());
             }
         }
+    }
+
+    /**
+     * 取消订单：本地事务置 CANCELLED，并写 Outbox 事件 OrderCancelled（inventory 消费后释放预留）。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelOrder(Long orderId) {
+        PurchaseOrder order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(() -> 404, "Order not found: " + orderId);
+        }
+        if ("CANCELLED".equals(order.getStatus())) {
+            return;
+        }
+        if (!List.of("DRAFT", "SUBMITTED", "APPROVED").contains(order.getStatus())) {
+            throw new BusinessException(() -> 400, "Order in status " + order.getStatus() + " cannot be cancelled");
+        }
+        order.setStatus("CANCELLED");
+        orderMapper.updateById(order);
+
+        var wrapper = new LambdaQueryWrapper<PurchaseOrderItem>()
+                .eq(PurchaseOrderItem::getOrderId, orderId);
+        List<PurchaseOrderItem> items = itemMapper.selectList(wrapper);
+        List<Map<String, Object>> itemList = new ArrayList<>();
+        for (PurchaseOrderItem item : items) {
+            itemList.add(Map.of("itemId", item.getItemId(), "quantity", item.getQuantity()));
+        }
+        outboxService.saveEvent(KafkaTopics.ORDER_CANCELLED, "PO", orderId,
+                "order-cancel:" + orderId,
+                Map.of("orderId", orderId, "items", itemList));
     }
 
     public PurchaseOrder getById(Long id) {

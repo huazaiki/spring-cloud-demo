@@ -56,4 +56,10 @@ public class PurchaseController {
         orderService.approveOrder(id);
         return ApiResponse.success();
     }
+
+    @PostMapping("/{id}/cancel")
+    public ApiResponse<Void> cancel(@PathVariable Long id) {
+        orderService.cancelOrder(id);
+        return ApiResponse.success();
+    }
 }

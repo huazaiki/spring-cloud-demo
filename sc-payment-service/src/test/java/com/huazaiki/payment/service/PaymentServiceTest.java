@@ -2,6 +2,7 @@ package com.huazaiki.payment.service;
 
 import com.huazaiki.payment.entity.Payable;
 import com.huazaiki.payment.mapper.PayableMapper;
+import com.huazaiki.payment.outbox.OutboxService;
 import com.huazaiki.common.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,6 +23,7 @@ import static org.mockito.Mockito.*;
 class PaymentServiceTest {
 
     @Mock private PayableMapper payableMapper;
+    @Mock private OutboxService outboxService;
     @InjectMocks private PaymentService paymentService;
 
     @Nested
@@ -56,6 +58,41 @@ class PaymentServiceTest {
 
             paymentService.approvePayment(1L);
             assertEquals("APPROVED", payable.getStatus());
+        }
+    }
+
+    @Nested
+    @DisplayName("settlePayable")
+    class Settle {
+
+        @Test
+        @DisplayName("should settle APPROVED payable to PAID and write outbox event")
+        void shouldSettleApproved() {
+            Payable payable = new Payable();
+            payable.setId(1L);
+            payable.setOrderId(100L);
+            payable.setAmount(BigDecimal.valueOf(5000));
+            payable.setStatus("APPROVED");
+
+            when(payableMapper.selectById(1L)).thenReturn(payable);
+            when(payableMapper.updateById(any(Payable.class))).thenReturn(1);
+
+            paymentService.settlePayable(1L);
+
+            assertEquals("PAID", payable.getStatus());
+            verify(outboxService).saveEvent(any(), any(), eq(1L), any(), any());
+        }
+
+        @Test
+        @DisplayName("should throw when payable is not APPROVED")
+        void shouldThrowWhenNotApproved() {
+            Payable payable = new Payable();
+            payable.setId(2L);
+            payable.setStatus("PENDING");
+
+            when(payableMapper.selectById(2L)).thenReturn(payable);
+
+            assertThrows(BusinessException.class, () -> paymentService.settlePayable(2L));
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.huazaiki.inventory.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.huazaiki.common.event.KafkaTopics;
 import com.huazaiki.common.exception.BusinessException;
 import com.huazaiki.inventory.entity.Inventory;
 import com.huazaiki.inventory.entity.InventoryLedger;
@@ -10,12 +11,14 @@ import com.huazaiki.inventory.mapper.InventoryLedgerMapper;
 import com.huazaiki.inventory.mapper.InventoryMapper;
 import com.huazaiki.inventory.mapper.ItemMapper;
 import com.huazaiki.inventory.mapper.ReceiveRecordMapper;
+import com.huazaiki.inventory.outbox.OutboxService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 库存服务。
@@ -23,7 +26,7 @@ import java.util.List;
  * <p>语义（docs/design/schema.md §4）：
  * <ul>
  *   <li>预留 reserve：available − qty / reserved + qty，写流水 RESERVE；</li>
- *   <li>入库核销 receive：reserved − min(reserved, qty) / available + qty，写流水 RECEIVE（修复 reserved 只增不减的虚增缺陷）；</li>
+ *   <li>入库核销 receive：reserved − min(reserved, qty) / available + qty，写流水 RECEIVE（修复 reserved 只增不减的虚增缺陷），并写 Outbox 事件 StockInCompleted；</li>
  *   <li>释放预留 release：reserved − qty / available + qty，写流水 RELEASE（订单取消等场景）。</li>
  * </ul>
  * 流水行记录的是【可用库存】的变动（qty_change 带符号、before/after 为可用库存），保证"期初 + 流水 = 余额"。
@@ -35,15 +38,18 @@ public class InventoryService {
     private final InventoryMapper inventoryMapper;
     private final ReceiveRecordMapper receiveRecordMapper;
     private final InventoryLedgerMapper ledgerMapper;
+    private final OutboxService outboxService;
 
     public InventoryService(ItemMapper itemMapper,
                             InventoryMapper inventoryMapper,
                             ReceiveRecordMapper receiveRecordMapper,
-                            InventoryLedgerMapper ledgerMapper) {
+                            InventoryLedgerMapper ledgerMapper,
+                            OutboxService outboxService) {
         this.itemMapper = itemMapper;
         this.inventoryMapper = inventoryMapper;
         this.receiveRecordMapper = receiveRecordMapper;
         this.ledgerMapper = ledgerMapper;
+        this.outboxService = outboxService;
     }
 
     public List<Item> listItems() {
@@ -61,7 +67,7 @@ public class InventoryService {
     }
 
     /**
-     * 入库：登记收货记录，并核销预留（reserved→available），修复库存虚增缺陷。
+     * 入库：登记收货记录，核销预留（reserved→available），写流水并发布 StockInCompleted 事件。
      */
     @Transactional
     public void receiveItem(Long orderId, Long itemId, BigDecimal quantity) {
@@ -73,22 +79,27 @@ public class InventoryService {
         receiveRecordMapper.insert(record);
 
         Inventory inventory = findInventory(itemId);
+        BigDecimal beforeAvailable = BigDecimal.ZERO;
         if (inventory == null) {
             Inventory created = new Inventory();
             created.setItemId(itemId);
             created.setAvailableQty(quantity);
             created.setReservedQty(BigDecimal.ZERO);
             inventoryMapper.insert(created);
-            writeLedger(itemId, "RECEIVE", "ORDER", orderId, quantity, BigDecimal.ZERO, quantity);
-            return;
+        } else {
+            beforeAvailable = inventory.getAvailableQty();
+            BigDecimal release = inventory.getReservedQty().min(quantity);
+            inventory.setReservedQty(inventory.getReservedQty().subtract(release));
+            inventory.setAvailableQty(beforeAvailable.add(quantity));
+            inventoryMapper.updateById(inventory);
         }
+        BigDecimal afterAvailable = inventory == null ? quantity : inventory.getAvailableQty();
+        writeLedger(itemId, "RECEIVE", "ORDER", orderId, quantity, beforeAvailable, afterAvailable);
 
-        BigDecimal beforeAvailable = inventory.getAvailableQty();
-        BigDecimal release = inventory.getReservedQty().min(quantity);
-        inventory.setReservedQty(inventory.getReservedQty().subtract(release));
-        inventory.setAvailableQty(beforeAvailable.add(quantity));
-        inventoryMapper.updateById(inventory);
-        writeLedger(itemId, "RECEIVE", "ORDER", orderId, quantity, beforeAvailable, inventory.getAvailableQty());
+        outboxService.saveEvent(
+                KafkaTopics.STOCK_IN_COMPLETED, "ORDER", orderId,
+                "stock-in:" + orderId + ":" + itemId + ":" + record.getId(),
+                Map.of("orderId", orderId, "itemId", itemId, "quantity", quantity));
     }
 
     /**

@@ -37,4 +37,10 @@ public class PaymentController {
         paymentService.approvePayment(id);
         return ApiResponse.success();
     }
+
+    @PutMapping("/{id}/settle")
+    public ApiResponse<Void> settle(@PathVariable Long id) {
+        paymentService.settlePayable(id);
+        return ApiResponse.success();
+    }
 }

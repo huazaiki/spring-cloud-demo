@@ -8,6 +8,7 @@ import com.huazaiki.purchase.feign.InventoryFeignClient;
 import com.huazaiki.purchase.feign.SupplierFeignClient;
 import com.huazaiki.purchase.mapper.PurchaseOrderItemMapper;
 import com.huazaiki.purchase.mapper.PurchaseOrderMapper;
+import com.huazaiki.purchase.outbox.OutboxService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -32,12 +33,13 @@ class OrderServiceTest {
     @Mock private PurchaseOrderItemMapper itemMapper;
     @Mock private InventoryFeignClient inventoryClient;
     @Mock private SupplierFeignClient supplierClient;
+    @Mock private OutboxService outboxService;
 
     private OrderService orderService;
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderMapper, itemMapper, inventoryClient, supplierClient);
+        orderService = new OrderService(orderMapper, itemMapper, inventoryClient, supplierClient, outboxService);
     }
 
     @Nested
@@ -103,6 +105,40 @@ class OrderServiceTest {
             when(orderMapper.selectById(2L)).thenReturn(order);
 
             assertThrows(BusinessException.class, () -> orderService.approveOrder(2L));
+        }
+    }
+
+    @Nested
+    @DisplayName("cancelOrder")
+    class Cancel {
+
+        @Test
+        @DisplayName("should cancel DRAFT order and write OrderCancelled outbox event")
+        void shouldCancelDraftOrder() {
+            PurchaseOrder order = new PurchaseOrder();
+            order.setId(1L);
+            order.setStatus("DRAFT");
+
+            when(orderMapper.selectById(1L)).thenReturn(order);
+            when(orderMapper.updateById(any(PurchaseOrder.class))).thenReturn(1);
+            when(itemMapper.selectList(any())).thenReturn(List.of());
+
+            orderService.cancelOrder(1L);
+
+            assertEquals("CANCELLED", order.getStatus());
+            verify(outboxService).saveEvent(any(), anyString(), eq(1L), anyString(), any());
+        }
+
+        @Test
+        @DisplayName("should throw when order is already RECEIVED")
+        void shouldThrowWhenReceived() {
+            PurchaseOrder order = new PurchaseOrder();
+            order.setId(2L);
+            order.setStatus("RECEIVED");
+
+            when(orderMapper.selectById(2L)).thenReturn(order);
+
+            assertThrows(BusinessException.class, () -> orderService.cancelOrder(2L));
         }
     }
 }

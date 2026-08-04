@@ -10,6 +10,7 @@ import com.huazaiki.inventory.mapper.InventoryLedgerMapper;
 import com.huazaiki.inventory.mapper.InventoryMapper;
 import com.huazaiki.inventory.mapper.ItemMapper;
 import com.huazaiki.inventory.mapper.ReceiveRecordMapper;
+import com.huazaiki.inventory.outbox.OutboxService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,8 @@ import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,6 +35,7 @@ class InventoryServiceTest {
     @Mock private InventoryMapper inventoryMapper;
     @Mock private ReceiveRecordMapper receiveRecordMapper;
     @Mock private InventoryLedgerMapper ledgerMapper;
+    @Mock private OutboxService outboxService;
     @InjectMocks private InventoryService inventoryService;
 
     @Nested
@@ -43,7 +47,11 @@ class InventoryServiceTest {
         void shouldCreateRecords() {
             when(inventoryMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
             when(inventoryMapper.insert(any(Inventory.class))).thenReturn(1);
-            when(receiveRecordMapper.insert(any(ReceiveRecord.class))).thenReturn(1);
+            when(receiveRecordMapper.insert(any(ReceiveRecord.class))).thenAnswer(inv -> {
+                ReceiveRecord r = inv.getArgument(0);
+                r.setId(1L);
+                return 1;
+            });
             when(ledgerMapper.insert(any(InventoryLedger.class))).thenReturn(1);
 
             inventoryService.receiveItem(1L, 10L, BigDecimal.valueOf(100));
@@ -51,6 +59,7 @@ class InventoryServiceTest {
             verify(inventoryMapper).insert(any(Inventory.class));
             verify(receiveRecordMapper).insert(any(ReceiveRecord.class));
             verify(ledgerMapper).insert(any(InventoryLedger.class));
+            verify(outboxService).saveEvent(anyString(), eq("ORDER"), eq(1L), anyString(), any());
         }
 
         @Test
@@ -64,7 +73,11 @@ class InventoryServiceTest {
 
             when(inventoryMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(inv);
             when(inventoryMapper.updateById(any(Inventory.class))).thenReturn(1);
-            when(receiveRecordMapper.insert(any(ReceiveRecord.class))).thenReturn(1);
+            when(receiveRecordMapper.insert(any(ReceiveRecord.class))).thenAnswer(inv2 -> {
+                ReceiveRecord r = inv2.getArgument(0);
+                r.setId(2L);
+                return 1;
+            });
             when(ledgerMapper.insert(any(InventoryLedger.class))).thenReturn(1);
 
             inventoryService.receiveItem(1L, 10L, BigDecimal.valueOf(100));
@@ -73,6 +86,7 @@ class InventoryServiceTest {
             assertEquals(BigDecimal.valueOf(150), inv.getAvailableQty());
             assertEquals(BigDecimal.ZERO, inv.getReservedQty());
             verify(ledgerMapper).insert(any(InventoryLedger.class));
+            verify(outboxService).saveEvent(anyString(), eq("ORDER"), eq(1L), anyString(), any());
         }
 
         @Test
@@ -86,7 +100,11 @@ class InventoryServiceTest {
 
             when(inventoryMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(inv);
             when(inventoryMapper.updateById(any(Inventory.class))).thenReturn(1);
-            when(receiveRecordMapper.insert(any(ReceiveRecord.class))).thenReturn(1);
+            when(receiveRecordMapper.insert(any(ReceiveRecord.class))).thenAnswer(inv2 -> {
+                ReceiveRecord r = inv2.getArgument(0);
+                r.setId(3L);
+                return 1;
+            });
             when(ledgerMapper.insert(any(InventoryLedger.class))).thenReturn(1);
 
             inventoryService.receiveItem(1L, 10L, BigDecimal.valueOf(100));

@@ -1,5 +1,10 @@
 # Nacos dataId: sc-purchase-service.yml   group: DEFAULT_GROUP
 spring:
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration
   datasource:
     url: jdbc:mysql://localhost:3306/purchase_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
   cloud:
@@ -16,6 +21,12 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: purchase-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
 
 # Resilience4j 熔断：按 Feign 客户端名（sc-inventory-service / sc-supplier-service）独立熔断
 resilience4j:
