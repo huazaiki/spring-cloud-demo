@@ -1,5 +1,6 @@
 package com.huazaiki.auth.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -13,6 +14,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
+    @Value("${jwt.expiration-ms}")
+    private long jwtExpirationMs;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -32,8 +39,6 @@ public class SecurityConfig {
 
     @Bean
     public JwtUtil jwtUtil() {
-        return new JwtUtil(
-                "change-me-to-a-long-random-string-at-least-256-bits",
-                3600000L);
+        return new JwtUtil(jwtSecret, jwtExpirationMs);
     }
 }

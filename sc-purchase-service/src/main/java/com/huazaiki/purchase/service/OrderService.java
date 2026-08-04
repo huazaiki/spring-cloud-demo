@@ -1,5 +1,6 @@
 package com.huazaiki.purchase.service;
 
+import com.huazaiki.common.api.ApiResponse;
 import com.huazaiki.common.exception.BusinessException;
 import com.huazaiki.purchase.entity.PurchaseOrder;
 import com.huazaiki.purchase.entity.PurchaseOrderItem;
@@ -7,6 +8,7 @@ import com.huazaiki.purchase.feign.InventoryFeignClient;
 import com.huazaiki.purchase.feign.SupplierFeignClient;
 import com.huazaiki.purchase.mapper.PurchaseOrderItemMapper;
 import com.huazaiki.purchase.mapper.PurchaseOrderMapper;
+import org.apache.seata.spring.annotation.GlobalTransactional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,12 +42,14 @@ public class OrderService {
         return orderMapper.selectList(null);
     }
 
+    @GlobalTransactional(rollbackFor = Exception.class)
     @Transactional(rollbackFor = Exception.class)
     public PurchaseOrder createOrder(Long supplierId, List<ItemLine> items) {
         // verify supplier exists via Feign
         var supplierResp = supplierClient.getById(supplierId);
         if (supplierResp.getCode() != 200 || supplierResp.getData() == null) {
-            throw new BusinessException(() -> 404, "Supplier not found: " + supplierId);
+            throw new BusinessException(() -> supplierResp.getCode(),
+                    "Supplier unavailable or not found: " + supplierId);
         }
 
         PurchaseOrder order = new PurchaseOrder();
@@ -71,17 +75,22 @@ public class OrderService {
             itemMapper.insert(orderItem);
         }
 
-        // reserve stock for each item via Feign
+        // reserve stock for each item via Feign (protected by Resilience4j circuit breaker)
         for (ItemLine item : items) {
-            inventoryClient.reserveStock(Map.of(
+            ApiResponse<Void> resp = inventoryClient.reserveStock(Map.of(
                 "itemId", item.itemId(),
                 "quantity", item.quantity()
             ));
+            if (resp.getCode() != 200) {
+                throw new BusinessException(() -> resp.getCode(),
+                        "Stock reservation failed for item " + item.itemId() + ": " + resp.getMessage());
+            }
         }
 
         return order;
     }
 
+    @GlobalTransactional(rollbackFor = Exception.class)
     @Transactional(rollbackFor = Exception.class)
     public void approveOrder(Long orderId) {
         PurchaseOrder order = orderMapper.selectById(orderId);
@@ -94,15 +103,19 @@ public class OrderService {
         order.setStatus("APPROVED");
         orderMapper.updateById(order);
 
-        // query items for this order, then reserve stock via Feign
+        // query items for this order, then reserve stock via Feign (protected by circuit breaker)
         var wrapper = new LambdaQueryWrapper<PurchaseOrderItem>()
                 .eq(PurchaseOrderItem::getOrderId, orderId);
         List<PurchaseOrderItem> items = itemMapper.selectList(wrapper);
         for (PurchaseOrderItem item : items) {
-            inventoryClient.reserveStock(Map.of(
+            ApiResponse<Void> resp = inventoryClient.reserveStock(Map.of(
                 "itemId", item.getItemId(),
                 "quantity", item.getQuantity()
             ));
+            if (resp.getCode() != 200) {
+                throw new BusinessException(() -> resp.getCode(),
+                        "Stock reservation failed for item " + item.getItemId() + ": " + resp.getMessage());
+            }
         }
     }
 

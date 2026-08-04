@@ -55,5 +55,21 @@ services:
     ports:
       - "9411:9411"
 
+  seata-server:
+    image: seataio/seata-server:2.1.0
+    container_name: sc-seata-server
+    ports:
+      - "8091:8091"
+    environment:
+      SEATA_PORT: 8091
+      SEATA_IP: 127.0.0.1
+    volumes:
+      - ./docker/seata/resources:/seata-server/resources
+    depends_on:
+      nacos:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+
 volumes:
   mysql-data:
