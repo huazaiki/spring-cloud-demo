@@ -28,6 +28,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -65,6 +66,7 @@ class ProcureToPayE2ETest {
 
     // 运行中产生的 id
     static String adminToken, purchaserToken, deptMgrToken, purchMgrToken, warehouseToken, financeToken;
+    static Process gatewayProcess;
     static Long deptId, itemId, supplierId, prId, orderId, receiveId, payableId;
     static String orderNo;
 
@@ -81,6 +83,9 @@ class ProcureToPayE2ETest {
         CONTEXTS.forEach(ctx -> {
             try { ctx.close(); } catch (Exception ignored) { }
         });
+        if (gatewayProcess != null) {
+            gatewayProcess.destroy();
+        }
     }
 
     // ---------------- 基础设施 ----------------
@@ -107,7 +112,7 @@ class ProcureToPayE2ETest {
         }
     }
 
-    private static void startServices() {
+    private static void startServices() throws Exception {
         Map<String, Object> base = new HashMap<>();
         base.put("spring.cloud.nacos.config.enabled", false);
         base.put("spring.cloud.nacos.discovery.enabled", false);
@@ -162,9 +167,31 @@ class ProcureToPayE2ETest {
         payment.put("spring.flyway.locations", "classpath:db/migration/payment-service");
         start("payment", PaymentServiceApplication.class, payment);
 
-        Map<String, Object> gateway = new HashMap<>(base);
-        gateway.put("server.port", GW);
-        start("gateway", GatewayServiceApplication.class, gateway);
+        // 网关以独立 JVM 启动（其 -exec fat jar 仅含 WebFlux，避免与测试 JVM 中服务模块带来的 spring-webmvc 冲突）
+        startGatewayProcess();
+    }
+
+    private static void startGatewayProcess() throws Exception {
+        File jar = new File("../sc-gateway-service/target/sc-gateway-service-0.0.1-SNAPSHOT-exec.jar");
+        if (!jar.exists()) {
+            throw new IllegalStateException("Gateway exec jar not found: " + jar.getAbsolutePath() + "（请先 mvn package）");
+        }
+        List<String> cmd = new ArrayList<>(List.of(
+                "java", "-jar", jar.getAbsolutePath(),
+                "--server.port=" + GW,
+                "--jwt.secret=" + SECRET,
+                "--spring.cloud.nacos.config.enabled=false",
+                "--spring.cloud.nacos.discovery.enabled=false",
+                "--spring.cloud.discovery.client.simple.instances.sc-auth-service[0].uri=http://localhost:" + AUTH,
+                "--spring.cloud.discovery.client.simple.instances.sc-supplier-service[0].uri=http://localhost:" + SUP,
+                "--spring.cloud.discovery.client.simple.instances.sc-purchase-service[0].uri=http://localhost:" + PUR,
+                "--spring.cloud.discovery.client.simple.instances.sc-inventory-service[0].uri=http://localhost:" + INV,
+                "--spring.cloud.discovery.client.simple.instances.sc-payment-service[0].uri=http://localhost:" + PAY,
+                "--spring.main.banner-mode=off"));
+        gatewayProcess = new ProcessBuilder(cmd)
+                .redirectErrorStream(true)
+                .start();
+        System.out.println("[E2E] gateway process started (pid " + gatewayProcess.pid() + ")");
     }
 
     private static void start(String name, Class<?> appClass, Map<String, Object> props) {
