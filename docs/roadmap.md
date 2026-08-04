@@ -67,3 +67,20 @@
 - `CONTEXT.md` — 领域词汇表（Ubiquitous Language）
 - `docs/adr/0001-approval-engine.md` — 审批流选型
 - `docs/adr/0002-transaction-consistency.md` — 事务一致性策略
+
+## P0 里程碑（2026-08-04 验收）
+
+> 原定 P0 技术债全部清零，`mvn -pl <全部 7 模块> -am test` BUILD SUCCESS（common 9 / auth 13 / purchase 5 / inventory 5 / payment 4 / supplier 3 测试全绿）。
+
+| P0 项 | 状态 | 提交 |
+|---|---|---|
+| 库存预留/入库闭环修复（reserved 只增不减虚增缺陷）+ inventory_ledger 库存流水 | ✅ | `9fc4b5a` |
+| Outbox + Kafka 事件落地（发布器/幂等消费；入库→应付、取消→释放预留、付款→结清） | ✅ | `8d15919` |
+| 服务内权限执行点（RBAC 数据模型 + JWT 身份/权限 claims + 网关透传 + @RequirePermission 拦截器） | ✅ | `c28eebc` |
+| Flyway 迁移基线铺开全部 6 服务 + 一期目标 schema（auth RBAC / inventory 流水 / outbox / supplier 一期） | ✅ | `ea5f40f` |
+
+### 里程碑验收结论
+
+- **P0 已达成**：数据正确性（库存闭环）、事件一致性（Outbox）、安全（权限执行点）、schema 管理（Flyway）四大地基就绪，可进入一期主体功能实施。
+- **DoD 剩余项（一期主体功能，非 P0）**：请购 PR、审批链引擎（ApprovalEngine）、收货/质检/入库流程化、发票/三单匹配/付款单、待办中心、前端（动态菜单/业务页）、Testcontainers E2E（主接缝）、契约测试、CI workflow + JaCoCo 门禁、审计字段补齐、文档同步（README/openapi.yml）。
+- 实施依据：Spec（issue #1）+ `docs/design/*.md`；边界见「明确排除」。
