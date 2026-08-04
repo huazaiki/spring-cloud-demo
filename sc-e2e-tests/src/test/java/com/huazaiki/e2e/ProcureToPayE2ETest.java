@@ -93,7 +93,9 @@ class ProcureToPayE2ETest {
              Statement st = c.createStatement()) {
             for (String db : List.of("auth_db", "supplier_db", "purchase_db", "inventory_db", "payment_db")) {
                 st.execute("CREATE DATABASE IF NOT EXISTS " + db);
+                st.execute("GRANT ALL PRIVILEGES ON " + db + ".* TO \u0027" + MYSQL.getUsername() + "\u0027@\u0027%\u0027");
             }
+            st.execute("FLUSH PRIVILEGES");
         } catch (java.sql.SQLException e) {
             // root 密码可能等于容器密码
             try (Connection c = DriverManager.getConnection(url, "root", MYSQL.getPassword());
