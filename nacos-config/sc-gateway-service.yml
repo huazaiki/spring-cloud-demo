@@ -18,18 +18,15 @@ spring:
         - id: sc-purchase-service
           uri: lb://sc-purchase-service
           predicates:
-            - Path=/api/v1/orders/**
+            - Path=/api/v1/orders/**,/api/v1/requisitions/**,/api/v1/approval-tasks/**
         - id: sc-inventory-service
           uri: lb://sc-inventory-service
           predicates:
-            - Path=/api/v1/inventory/**
+            - Path=/api/v1/inventory/**,/api/v1/receives/**,/api/v1/quality-inspections/**
         - id: sc-payment-service
           uri: lb://sc-payment-service
           predicates:
-            - Path=/api/v1/payments/**
-
-jwt:
-  secret: change-me-to-a-long-random-string-at-least-256-bits
+            - Path=/api/v1/payments/**,/api/v1/invoices/**,/api/v1/payment-vouchers/**
         - id: sc-purchase-reports
           uri: lb://sc-purchase-service
           predicates:
@@ -42,3 +39,6 @@ jwt:
           uri: lb://sc-inventory-service
           predicates:
             - Path=/api/v1/reports/inventory-summary
+
+jwt:
+  secret: change-me-to-a-long-random-string-at-least-256-bits
