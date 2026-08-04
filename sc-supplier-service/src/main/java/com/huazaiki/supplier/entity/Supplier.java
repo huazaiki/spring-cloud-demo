@@ -15,6 +15,10 @@ public class Supplier {
     private String creditCode;
     private String contactName;
     private String contactPhone;
+    private String category;
+    private String bankName;
+    private String bankAccountNo;
+    private String qualificationStatus;
     private String status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
@@ -29,6 +33,14 @@ public class Supplier {
     public void setContactName(String contactName) { this.contactName = contactName; }
     public String getContactPhone() { return contactPhone; }
     public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
+    public String getBankName() { return bankName; }
+    public void setBankName(String bankName) { this.bankName = bankName; }
+    public String getBankAccountNo() { return bankAccountNo; }
+    public void setBankAccountNo(String bankAccountNo) { this.bankAccountNo = bankAccountNo; }
+    public String getQualificationStatus() { return qualificationStatus; }
+    public void setQualificationStatus(String qualificationStatus) { this.qualificationStatus = qualificationStatus; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public LocalDateTime getCreateTime() { return createTime; }
