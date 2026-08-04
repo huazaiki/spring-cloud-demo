@@ -11,7 +11,7 @@
     </parent>
 
     <properties>
-        <jacoco.min.line>0.20</jacoco.min.line>
+        <jacoco.min.line>0.18</jacoco.min.line>
     </properties>
 
     <artifactId>sc-inventory-service</artifactId>

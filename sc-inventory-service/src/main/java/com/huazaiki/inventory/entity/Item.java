@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @TableName("item")
@@ -15,6 +16,9 @@ public class Item {
     private String spec;
     private String unit;
     private String sku;
+    private Long categoryId;
+    private BigDecimal safetyStock;
+    private BigDecimal reorderPoint;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
@@ -28,6 +32,12 @@ public class Item {
     public void setUnit(String unit) { this.unit = unit; }
     public String getSku() { return sku; }
     public void setSku(String sku) { this.sku = sku; }
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+    public BigDecimal getSafetyStock() { return safetyStock; }
+    public void setSafetyStock(BigDecimal safetyStock) { this.safetyStock = safetyStock; }
+    public BigDecimal getReorderPoint() { return reorderPoint; }
+    public void setReorderPoint(BigDecimal reorderPoint) { this.reorderPoint = reorderPoint; }
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
     public LocalDateTime getUpdateTime() { return updateTime; }

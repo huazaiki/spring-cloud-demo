@@ -16,6 +16,7 @@ import ApprovalTasks from './pages/ApprovalTasks';
 import Receives from './pages/Receives';
 import Finance from './pages/Finance';
 import System from './pages/System';
+import Reports from './pages/Reports';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -46,6 +47,7 @@ export default function App() {
               <Route path="receives" element={<Receives />} />
               <Route path="finance" element={<Finance />} />
               <Route path="system" element={<System />} />
+              <Route path="reports" element={<Reports />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

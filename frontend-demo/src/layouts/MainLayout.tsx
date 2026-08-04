@@ -2,7 +2,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Button, theme } from 'antd';
 import {
   DashboardOutlined, TeamOutlined, InboxOutlined, FileTextOutlined, DollarOutlined,
-  LogoutOutlined, AuditOutlined, ImportOutlined, SafetyCertificateOutlined, SettingOutlined,
+  LogoutOutlined, AuditOutlined, ImportOutlined, SafetyCertificateOutlined, SettingOutlined, BarChartOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 
@@ -17,6 +17,7 @@ const menuDefs = [
   { key: '/receives', icon: <ImportOutlined />, label: '收货质检入库', perm: 'menu:receives' },
   { key: '/finance', icon: <DollarOutlined />, label: '发票付款', perm: 'menu:finance' },
   { key: '/approval-tasks', icon: <AuditOutlined />, label: '待办中心', perm: 'menu:approval-tasks' },
+  { key: '/reports', icon: <BarChartOutlined />, label: '报表', perm: 'menu:reports' },
   { key: '/system', icon: <SettingOutlined />, label: '系统管理', perm: 'menu:system' },
 ];
 
