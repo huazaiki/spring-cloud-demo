@@ -10,6 +10,10 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
+    <properties>
+        <jacoco.min.line>0.35</jacoco.min.line>
+    </properties>
+
     <artifactId>sc-purchase-service</artifactId>
     <description>Purchase order management service</description>
 
@@ -97,6 +101,9 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            <configuration>
+                    <classifier>exec</classifier>
+                </configuration>
             </plugin>
         </plugins>
     </build>

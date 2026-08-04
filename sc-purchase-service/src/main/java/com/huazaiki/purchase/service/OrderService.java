@@ -157,6 +157,26 @@ public class OrderService {
                 Map.of("orderId", orderId, "items", itemList));
     }
 
+    /**
+     * 状态推进（状态机补全）：APPROVED→SHIPPED→RECEIVED（SETTLED 由付款结算事件驱动）。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void advanceStatus(Long orderId, String targetStatus) {
+        PurchaseOrder order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(() -> 404, "Order not found: " + orderId);
+        }
+        String current = order.getStatus();
+        boolean ok = ("APPROVED".equals(current) && "SHIPPED".equals(targetStatus))
+                || ("SHIPPED".equals(current) && "RECEIVED".equals(targetStatus));
+        if (!ok) {
+            throw new BusinessException(() -> 400,
+                    "Cannot advance order from " + current + " to " + targetStatus);
+        }
+        order.setStatus(targetStatus);
+        orderMapper.updateById(order);
+    }
+
     public PurchaseOrder getById(Long id) {
         PurchaseOrder order = orderMapper.selectById(id);
         if (order == null) {

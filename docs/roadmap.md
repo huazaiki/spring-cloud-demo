@@ -84,3 +84,11 @@
 - **P0 已达成**：数据正确性（库存闭环）、事件一致性（Outbox）、安全（权限执行点）、schema 管理（Flyway）四大地基就绪，可进入一期主体功能实施。
 - **DoD 剩余项（一期主体功能，非 P0）**：请购 PR、审批链引擎（ApprovalEngine）、收货/质检/入库流程化、发票/三单匹配/付款单、待办中心、前端（动态菜单/业务页）、Testcontainers E2E（主接缝）、契约测试、CI workflow + JaCoCo 门禁、审计字段补齐、文档同步（README/openapi.yml）。
 - 实施依据：Spec（issue #1）+ `docs/design/*.md`；边界见「明确排除」。
+
+### 质量基建（CI/E2E，2026-08-04 落地）
+
+- `sc-e2e-tests` 模块：网关公共 API 黑盒 E2E 主接缝（Testcontainers MySQL+Kafka + 6 服务 + SimpleDiscoveryClient 静态实例替代 Nacos）；本地 Docker 不可用时自动跳过，CI（GitHub Actions ubuntu，原生 Docker）运行。
+- 覆盖率门禁：JaCoCo 各模块 line 门限（common 0.60 / auth 0.40 / supplier 0.30 / purchase 0.35 / inventory 0.20 / payment 0.12；gateway/e2e 跳过）。目标随测试补强逐步提升至 0.60。
+- CI：`.github/workflows/ci.yml`（push/PR → mvn verify → 上传 jacoco 报告；main 合并后构建 6 服务镜像推 GHCR）。
+- 服务模块 Spring Boot 可执行 jar 加 `-exec` classifier（普通 jar 供模块依赖解析）。
+- 说明：本机 Docker Desktop 29.x 管道代理与 docker-java 不兼容，E2E 无法本地运行，需在 CI 执行（详见 `docs/research/nacos-test-strategy.md` 与 devops.md）。

@@ -11,6 +11,9 @@
     </parent>
 
     <artifactId>sc-gateway-service</artifactId>
+    <properties>
+        <jacoco.skip>true</jacoco.skip>
+    </properties>
     <description>API Gateway with routing, JWT auth, and rate limiting</description>
 
     <dependencies>
@@ -71,6 +74,9 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            <configuration>
+                    <classifier>exec</classifier>
+                </configuration>
             </plugin>
         </plugins>
     </build>

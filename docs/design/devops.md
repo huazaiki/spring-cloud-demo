@@ -5,7 +5,7 @@
 
 ## 1. CI 流水线（GitHub Actions）
 
-文件：`.github/workflows/ci.yml`
+文件：`.github/workflows/ci.yml`（已落地，见 roadmap「质量基建」）
 
 ```yaml
 name: ci

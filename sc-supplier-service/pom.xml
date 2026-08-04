@@ -10,6 +10,10 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
+    <properties>
+        <jacoco.min.line>0.30</jacoco.min.line>
+    </properties>
+
     <artifactId>sc-supplier-service</artifactId>
     <description>Supplier management service</description>
 
@@ -75,6 +79,9 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            <configuration>
+                    <classifier>exec</classifier>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -10,6 +10,10 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
+    <properties>
+        <jacoco.min.line>0.20</jacoco.min.line>
+    </properties>
+
     <artifactId>sc-inventory-service</artifactId>
     <description>Inventory management service with stock reservation</description>
 
@@ -84,6 +88,9 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            <configuration>
+                    <classifier>exec</classifier>
+                </configuration>
             </plugin>
         </plugins>
     </build>

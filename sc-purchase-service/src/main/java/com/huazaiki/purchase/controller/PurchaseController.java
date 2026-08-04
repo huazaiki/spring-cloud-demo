@@ -66,4 +66,11 @@ public class PurchaseController {
         orderService.cancelOrder(id);
         return ApiResponse.success();
     }
+
+    @RequirePermission("po:update")
+    @PutMapping("/{id}/status")
+    public ApiResponse<Void> advanceStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        orderService.advanceStatus(id, body.get("status"));
+        return ApiResponse.success();
+    }
 }

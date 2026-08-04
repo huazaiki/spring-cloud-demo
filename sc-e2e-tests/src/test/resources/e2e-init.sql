@@ -1,0 +1,6 @@
+-- Testcontainers MySQL 初始化：创建各服务数据库
+CREATE DATABASE IF NOT EXISTS auth_db;
+CREATE DATABASE IF NOT EXISTS supplier_db;
+CREATE DATABASE IF NOT EXISTS purchase_db;
+CREATE DATABASE IF NOT EXISTS inventory_db;
+CREATE DATABASE IF NOT EXISTS payment_db;
