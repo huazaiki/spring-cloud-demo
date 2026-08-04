@@ -11,6 +11,10 @@ import SupplierList from './pages/SupplierList';
 import ItemList from './pages/ItemList';
 import OrderList from './pages/OrderList';
 import PaymentList from './pages/PaymentList';
+import RequisitionList from './pages/RequisitionList';
+import ApprovalTasks from './pages/ApprovalTasks';
+import Receives from './pages/Receives';
+import Finance from './pages/Finance';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -36,6 +40,10 @@ export default function App() {
               <Route path="items" element={<ItemList />} />
               <Route path="orders" element={<OrderList />} />
               <Route path="payments" element={<PaymentList />} />
+              <Route path="requisitions" element={<RequisitionList />} />
+              <Route path="approval-tasks" element={<ApprovalTasks />} />
+              <Route path="receives" element={<Receives />} />
+              <Route path="finance" element={<Finance />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

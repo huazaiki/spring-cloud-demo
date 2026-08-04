@@ -17,7 +17,7 @@ export default function Login() {
       const res = await loginApi(values);
       const token = res.data?.token;
       if (token) {
-        auth.login(token, values.username, '');
+        auth.login(token, values.username);
         message.success('登录成功');
       } else {
         message.error('登录失败：未返回 token');

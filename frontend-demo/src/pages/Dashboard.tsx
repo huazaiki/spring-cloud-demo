@@ -12,11 +12,11 @@ const roleLabels: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const { username, role } = useAuth();
+  const { username, roles } = useAuth();
 
   return (
     <div>
-      <Title level={4}>欢迎，{username}（{roleLabels[role || ''] || role}）</Title>
+      <Title level={4}>欢迎，{username}（{roleLabels[(roles || [])[0]] || (roles || [])[0] || '—'}）</Title>
       <Paragraph type="secondary">
         采购-入库-付款全链路管理系统。使用左侧导航进入各功能模块。
       </Paragraph>

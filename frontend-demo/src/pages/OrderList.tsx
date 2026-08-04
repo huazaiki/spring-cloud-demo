@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, InputNumber, Space, Tag, message, Typography, Select } from 'antd';
-import { PlusOutlined, ReloadOutlined, CheckOutlined } from '@ant-design/icons';
-import { listOrders, createOrder, approveOrder } from '../api/purchase';
+import { PlusOutlined, ReloadOutlined, CheckOutlined, CloseOutlined, ImportOutlined } from '@ant-design/icons';
+import { listOrders, createOrder, approveOrder, cancelOrder, advanceOrderStatus } from '../api/purchase';
 import { listSuppliers } from '../api/supplier';
 
 const { Title } = Typography;
@@ -70,6 +70,15 @@ export default function OrderList() {
     } finally { setApprovingId(null); }
   };
 
+  const handleCancel = async (id: string) => {
+    try { await cancelOrder(Number(id)); message.success('订单已取消'); fetchOrders(); }
+    catch (err: unknown) { message.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || '取消失败'); }
+  };
+
+  const handleAdvance = async (id: string, status: string) => {
+    try { await advanceOrderStatus(Number(id), status); message.success('状态已更新'); fetchOrders(); }
+    catch (err: unknown) { message.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || '状态更新失败'); }
+  };
   const columns = [
     { title: 'ID', dataIndex: 'id', width: 80, ellipsis: true },
     { title: '订单号', dataIndex: 'orderNo' },
@@ -77,9 +86,17 @@ export default function OrderList() {
     { title: '金额', dataIndex: 'totalAmount', width: 100, render: fmtMoney },
     { title: '状态', dataIndex: 'status', width: 100, render: (s: string) => <Tag color={statusColor[s]}>{statusLabel[s] || s}</Tag> },
     { title: '创建时间', dataIndex: 'createTime', width: 180 },
-    { title: '操作', width: 120, render: (_: unknown, record: Order) => (
-      <Button size="small" icon={<CheckOutlined />} loading={approvingId === record.id}
-        disabled={record.status !== 'DRAFT'} onClick={() => handleApprove(record.id)}>审批</Button>
+    { title: '操作', width: 240, render: (_: unknown, record: Order) => (
+      <Space>
+        <Button size="small" type="primary" icon={<CheckOutlined />} loading={approvingId === record.id}
+          disabled={record.status !== 'DRAFT'} onClick={() => handleApprove(record.id)}>审批</Button>
+        {['APPROVED', 'SHIPPED'].includes(record.status) && (
+          <Button size="small" icon={<ImportOutlined />} onClick={() => handleAdvance(record.id, 'RECEIVED')}>标记收货</Button>
+        )}
+        {['DRAFT', 'APPROVED'].includes(record.status) && (
+          <Button size="small" danger icon={<CloseOutlined />} onClick={() => handleCancel(record.id)}>取消</Button>
+        )}
+      </Space>
     )},
   ];
 

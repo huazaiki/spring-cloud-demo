@@ -20,3 +20,10 @@ export async function login(payload: LoginPayload) {
   const res = await client.post('/api/v1/auth/login', payload);
   return res.data;
 }
+
+export interface MeInfo { userId: number; username: string; deptId: number | null; deptName?: string; roles: string[]; permissions: string[]; }
+
+export async function me(): Promise<MeInfo> {
+  const res = await client.get('/api/v1/auth/me');
+  return res.data.data;
+}

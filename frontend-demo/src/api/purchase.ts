@@ -32,3 +32,11 @@ export async function approveOrder(id: number) {
   const res = await client.put('/api/v1/orders/' + id + '/approve');
   return res.data;
 }
+export async function cancelOrder(id: number) {
+  const res = await client.post(`/api/v1/orders/${id}/cancel`);
+  return res.data;
+}
+export async function advanceOrderStatus(id: number, status: string) {
+  const res = await client.put(`/api/v1/orders/${id}/status`, { status });
+  return res.data;
+}

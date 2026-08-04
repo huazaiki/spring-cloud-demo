@@ -37,3 +37,7 @@ export async function reserveItem(payload: ReservePayload) {
   const res = await client.post('/api/v1/inventory/reserve', payload);
   return res.data;
 }
+export async function listLedger(itemId?: number) {
+  const res = await client.get('/api/v1/inventory/ledger', { params: { itemId } });
+  return res.data;
+}
