@@ -1,6 +1,7 @@
 package com.huazaiki.inventory.controller;
 
 import com.huazaiki.common.api.ApiResponse;
+import com.huazaiki.inventory.entity.InventoryLedger;
 import com.huazaiki.inventory.entity.Item;
 import com.huazaiki.inventory.service.InventoryService;
 import org.springframework.web.bind.annotation.*;
@@ -45,7 +46,22 @@ public class InventoryController {
     public ApiResponse<Void> reserve(@RequestBody Map<String, Object> body) {
         Long itemId = Long.valueOf(body.get("itemId").toString());
         BigDecimal quantity = new BigDecimal(body.get("quantity").toString());
-        inventoryService.reserveStock(itemId, quantity);
+        Long orderId = body.get("orderId") != null ? Long.valueOf(body.get("orderId").toString()) : null;
+        inventoryService.reserveStock(itemId, quantity, orderId);
         return ApiResponse.success();
+    }
+
+    @PostMapping("/release")
+    public ApiResponse<Void> release(@RequestBody Map<String, Object> body) {
+        Long itemId = Long.valueOf(body.get("itemId").toString());
+        BigDecimal quantity = new BigDecimal(body.get("quantity").toString());
+        Long orderId = body.get("orderId") != null ? Long.valueOf(body.get("orderId").toString()) : null;
+        inventoryService.releaseReservation(itemId, quantity, orderId);
+        return ApiResponse.success();
+    }
+
+    @GetMapping("/ledger")
+    public ApiResponse<List<InventoryLedger>> ledger(@RequestParam(required = false) Long itemId) {
+        return ApiResponse.success(inventoryService.listLedger(itemId));
     }
 }

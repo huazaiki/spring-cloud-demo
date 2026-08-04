@@ -79,7 +79,8 @@ public class OrderService {
         for (ItemLine item : items) {
             ApiResponse<Void> resp = inventoryClient.reserveStock(Map.of(
                 "itemId", item.itemId(),
-                "quantity", item.quantity()
+                "quantity", item.quantity(),
+                "orderId", order.getId()
             ));
             if (resp.getCode() != 200) {
                 throw new BusinessException(() -> resp.getCode(),
@@ -110,7 +111,8 @@ public class OrderService {
         for (PurchaseOrderItem item : items) {
             ApiResponse<Void> resp = inventoryClient.reserveStock(Map.of(
                 "itemId", item.getItemId(),
-                "quantity", item.getQuantity()
+                "quantity", item.getQuantity(),
+                "orderId", order.getId()
             ));
             if (resp.getCode() != 200) {
                 throw new BusinessException(() -> resp.getCode(),

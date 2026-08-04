@@ -52,7 +52,11 @@ class OrderServiceTest {
             when(inventoryClient.reserveStock(any()))
                     .thenReturn(ApiResponse.success());
             when(orderMapper.insert(any(PurchaseOrder.class)))
-                    .thenReturn(1);
+                    .thenAnswer(inv -> {
+                        PurchaseOrder po = inv.getArgument(0);
+                        po.setId(1L); // 模拟 MyBatis-Plus ASSIGN_ID 回填主键
+                        return 1;
+                    });
             when(itemMapper.insert(any(PurchaseOrderItem.class)))
                     .thenReturn(1);
 
