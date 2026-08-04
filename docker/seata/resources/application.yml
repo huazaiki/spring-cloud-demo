@@ -17,16 +17,9 @@ console:
 
 seata:
   registry:
-    # support: nacos, eureka, redis, zk, consul, etcd3, sofa
-    type: nacos
-    nacos:
-      application: seata-server
-      server-addr: sc-nacos:8848
-      group: SEATA_GROUP
-      namespace: ""
-      cluster: default
-      username: ""
-      password: ""
+    # 客户端用 file registry 直连（grouplist 127.0.0.1:8091），服务端无需向 Nacos 注册
+    # （seata-server 内置 nacos-client 1.4.6 与 Nacos 3.x 不兼容，避免注册崩溃）
+    type: file
   config:
     # support: nacos, consul, apollo, zk, etcd3
     type: file
