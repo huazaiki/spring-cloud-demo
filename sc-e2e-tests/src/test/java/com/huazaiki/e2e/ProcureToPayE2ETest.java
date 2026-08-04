@@ -210,6 +210,14 @@ class ProcureToPayE2ETest {
                 .redirectErrorStream(true)
                 .start();
         System.out.println("[E2E] gateway process started (pid " + gatewayProcess.pid() + ")");
+        new Thread(() -> {
+            try (var reader = new java.io.BufferedReader(new java.io.InputStreamReader(gatewayProcess.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println("[GW] " + line);
+                }
+            } catch (Exception ignored) { }
+        }).start();
     }
 
     private static void start(String name, Class<?> appClass, Map<String, Object> props) {
