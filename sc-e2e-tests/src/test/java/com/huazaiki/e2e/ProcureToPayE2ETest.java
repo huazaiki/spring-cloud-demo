@@ -186,7 +186,26 @@ class ProcureToPayE2ETest {
                 "--spring.cloud.discovery.client.simple.instances.sc-purchase-service[0].uri=http://localhost:" + PUR,
                 "--spring.cloud.discovery.client.simple.instances.sc-inventory-service[0].uri=http://localhost:" + INV,
                 "--spring.cloud.discovery.client.simple.instances.sc-payment-service[0].uri=http://localhost:" + PAY,
-                "--spring.main.banner-mode=off"));
+                "--spring.main.banner-mode=off",
+                // 本地路由（Nacos 关闭后由这里提供，与 nacos-config/sc-gateway-service.yml 对齐）
+                "--spring.cloud.gateway.routes[0].id=sc-auth-service",
+                "--spring.cloud.gateway.routes[0].uri=lb://sc-auth-service",
+                "--spring.cloud.gateway.routes[0].predicates[0]=Path=/api/v1/auth/**",
+                "--spring.cloud.gateway.routes[1].id=sc-auth-admin",
+                "--spring.cloud.gateway.routes[1].uri=lb://sc-auth-service",
+                "--spring.cloud.gateway.routes[1].predicates[0]=Path=/api/v1/users/**,/api/v1/depts/**,/api/v1/roles/**,/api/v1/permissions/**",
+                "--spring.cloud.gateway.routes[2].id=sc-supplier-service",
+                "--spring.cloud.gateway.routes[2].uri=lb://sc-supplier-service",
+                "--spring.cloud.gateway.routes[2].predicates[0]=Path=/api/v1/suppliers/**",
+                "--spring.cloud.gateway.routes[3].id=sc-purchase-service",
+                "--spring.cloud.gateway.routes[3].uri=lb://sc-purchase-service",
+                "--spring.cloud.gateway.routes[3].predicates[0]=Path=/api/v1/orders/**,/api/v1/requisitions/**,/api/v1/approval-tasks/**",
+                "--spring.cloud.gateway.routes[4].id=sc-inventory-service",
+                "--spring.cloud.gateway.routes[4].uri=lb://sc-inventory-service",
+                "--spring.cloud.gateway.routes[4].predicates[0]=Path=/api/v1/inventory/**,/api/v1/receives/**,/api/v1/quality-inspections/**",
+                "--spring.cloud.gateway.routes[5].id=sc-payment-service",
+                "--spring.cloud.gateway.routes[5].uri=lb://sc-payment-service",
+                "--spring.cloud.gateway.routes[5].predicates[0]=Path=/api/v1/payments/**,/api/v1/invoices/**,/api/v1/payment-vouchers/**"));
         gatewayProcess = new ProcessBuilder(cmd)
                 .redirectErrorStream(true)
                 .start();
