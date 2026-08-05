@@ -1,0 +1,47 @@
+meta {
+  name: 供应商列表
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/suppliers
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  size: 20
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+script:pre-request {
+  if (!bru.getEnvVar("token")) {
+    const res = await bru.request({
+      method: "POST",
+      url: bru.getEnvVar("baseUrl") + "/api/v1/auth/login",
+      body: JSON.stringify({
+        "username": "admin",
+        "password": "pass123"
+      }),
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+    bru.setEnvVar("token", res.data.data.token);
+  }
+}
+
+script:post-response {
+  bru.test("Status is 200", () => {
+    expect(res.status).to.equal(200);
+  });
+
+  bru.test("Response has data array", () => {
+    expect(res.data.data).to.not.be.undefined;
+  });
+}
