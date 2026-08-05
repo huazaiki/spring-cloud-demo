@@ -1,0 +1,31 @@
+meta {
+  name: 09-创建应付
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/v1/payments
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "orderId": {{orderId}},
+    "supplierId": {{supplierId}},
+    "amount": 500
+  }
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+script:post-response {
+  bru.test("Status is 200", () => {
+    expect(res.status).to.equal(200);
+  });
+  bru.setEnvVar("payableId", res.data.data.id);
+}

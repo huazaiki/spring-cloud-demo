@@ -1,0 +1,32 @@
+meta {
+  name: 04-创建物料
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/inventory/items
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "E2E Steel Rod",
+    "spec": "10mm x 6m",
+    "unit": "pcs",
+    "sku": "E2E-SR-10"
+  }
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+script:post-response {
+  bru.test("Status is 200", () => {
+    expect(res.status).to.equal(200);
+  });
+  bru.setEnvVar("itemId", res.data.data.id);
+}
