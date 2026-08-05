@@ -13,7 +13,6 @@ public class SysUser {
     private Long id;
     private String username;
     private String passwordHash;
-    private String role;
     private Long deptId;
     private String status;
     private LocalDateTime createTime;
@@ -25,8 +24,6 @@ public class SysUser {
     public void setUsername(String username) { this.username = username; }
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
     public Long getDeptId() { return deptId; }
     public void setDeptId(Long deptId) { this.deptId = deptId; }
     public String getStatus() { return status; }

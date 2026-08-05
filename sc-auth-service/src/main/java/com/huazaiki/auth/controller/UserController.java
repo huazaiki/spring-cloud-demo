@@ -48,7 +48,6 @@ public class UserController {
         user.setPasswordHash(passwordEncoder.encode(body.get("password")));
         user.setDeptId(body.get("deptId") != null ? Long.valueOf(body.get("deptId")) : null);
         user.setStatus("ACTIVE");
-        user.setRole("NONE");
         userMapper.insert(user);
         return ApiResponse.success();
     }

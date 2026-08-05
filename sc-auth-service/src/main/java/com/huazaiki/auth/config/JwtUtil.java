@@ -19,19 +19,6 @@ public class JwtUtil {
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(Long userId, String role) {
-        Date now = new Date();
-        Date expiry = new Date(now.getTime() + expirationMs);
-
-        return Jwts.builder()
-                .subject(userId.toString())
-                .claim("role", role)
-                .issuedAt(now)
-                .expiration(expiry)
-                .signWith(key)
-                .compact();
-    }
-
     /**
      * RBAC 版：JWT 携带身份（userId/deptId/roles/permissions），网关透传为 X-User-* 头。
      */
@@ -66,9 +53,6 @@ public class JwtUtil {
         return getClaims(token).getSubject();
     }
 
-    public String getRole(String token) {
-        return getClaims(token).get("role", String.class);
-    }
 
     private Claims getClaims(String token) {
         return Jwts.parser()

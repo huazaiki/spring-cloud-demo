@@ -28,6 +28,7 @@ public class AuthService {
 
     private static final ErrorCode USERNAME_EXISTS = () -> 400;
     private static final ErrorCode INVALID_CREDENTIALS = () -> 401;
+    private static final String DEFAULT_ROLE_CODE = "ROLE_REQUESTER";
 
     private final SysUserMapper userMapper;
     private final SysDeptMapper deptMapper;
@@ -57,7 +58,7 @@ public class AuthService {
     }
 
     @Transactional
-    public void register(String username, String password, String role) {
+    public void register(String username, String password, List<String> roleCodes, Long deptId) {
         if (userMapper.selectCount(new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getUsername, username)) > 0) {
             throw new BusinessException(USERNAME_EXISTS, "Username already exists: " + username);
@@ -66,9 +67,21 @@ public class AuthService {
         SysUser user = new SysUser();
         user.setUsername(username);
         user.setPasswordHash(passwordEncoder.encode(password));
-        user.setRole(role == null || role.isBlank() ? "NONE" : role);
+        user.setDeptId(deptId);
         user.setStatus("ACTIVE");
         userMapper.insert(user);
+
+        List<String> roles = (roleCodes == null || roleCodes.isEmpty())
+                ? List.of(DEFAULT_ROLE_CODE)
+                : roleCodes;
+
+        for (String roleCode : roles) {
+            SysRole role = roleMapper.selectOne(
+                    new LambdaQueryWrapper<SysRole>().eq(SysRole::getRoleCode, roleCode));
+            if (role != null) {
+                assignRoleToUser(user.getId(), role.getId());
+            }
+        }
     }
 
     /**
@@ -142,5 +155,12 @@ public class AuthService {
         return permissionMapper.selectBatchIds(permIds).stream()
                 .map(SysPermission::getPermCode)
                 .toList();
+    }
+
+    private void assignRoleToUser(Long userId, Long roleId) {
+        SysUserRole ur = new SysUserRole();
+        ur.setUserId(userId);
+        ur.setRoleId(roleId);
+        userRoleMapper.insert(ur);
     }
 }

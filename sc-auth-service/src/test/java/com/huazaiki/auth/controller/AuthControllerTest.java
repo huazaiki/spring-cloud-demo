@@ -34,7 +34,6 @@ class AuthControllerTest {
             RegisterRequest req = new RegisterRequest();
             req.setUsername("newuser");
             req.setPassword("pass123");
-            req.setRole("PURCHASER");
 
             ApiResponse<Void> response = controller.register(req);
             assertEquals(200, response.getCode());
@@ -45,12 +44,11 @@ class AuthControllerTest {
         @DisplayName("should propagate BusinessException")
         void shouldPropagateException() {
             doThrow(new BusinessException(() -> 400, "Username exists"))
-                    .when(authService).register(anyString(), anyString(), anyString());
+                    .when(authService).register(anyString(), anyString(), any(), any());
 
             RegisterRequest req = new RegisterRequest();
             req.setUsername("admin");
             req.setPassword("pass");
-            req.setRole("ADMIN");
 
             assertThrows(BusinessException.class, () -> controller.register(req));
         }

@@ -56,7 +56,7 @@ class AuthServiceTest {
             when(userMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
 
             assertThrows(BusinessException.class, () ->
-                    authService.register("admin", "pass123", "ADMIN"));
+                    authService.register("admin", "pass123", null, null));
         }
 
         @Test
@@ -66,7 +66,7 @@ class AuthServiceTest {
             when(passwordEncoder.encode("pass123")).thenReturn("hashed");
             when(userMapper.insert(any(SysUser.class))).thenReturn(1);
 
-            authService.register("newuser", "pass123", "PURCHASER");
+            authService.register("newuser", "pass123", null, null);
         }
     }
 
@@ -81,7 +81,6 @@ class AuthServiceTest {
             user.setId(1L);
             user.setUsername("admin");
             user.setPasswordHash("hashed");
-            user.setRole("ADMIN");
             user.setStatus("ACTIVE");
 
             SysRole role = new SysRole();
