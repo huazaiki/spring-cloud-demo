@@ -1,0 +1,21 @@
+meta {
+  name: 10-审批付款
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{baseUrl}}/api/v1/payments/{{payableId}}/approve
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+script:post-response {
+  bru.test("Status is 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}

@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "Spring Cloud Demo - P2P API",
+  "type": "collection",
+  "ignore": ["node_modules", ".git"]
+}

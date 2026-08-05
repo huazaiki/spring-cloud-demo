@@ -1,0 +1,36 @@
+meta {
+  name: 用户登录
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "admin",
+    "password": "pass123"
+  }
+}
+
+headers {
+  Content-Type: application/json
+}
+
+script:post-response {
+  bru.test("Status is 200", () => {
+    expect(res.status).to.equal(200);
+  });
+
+  bru.test("Response contains token", () => {
+    expect(res.data.data.token).to.not.be.undefined;
+  });
+
+  if (res.data.data && res.data.data.token) {
+    bru.setEnvVar("token", res.data.data.token);
+  }
+}

@@ -1,0 +1,38 @@
+meta {
+  name: 05-创建采购订单
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/orders
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "supplierId": {{supplierId}},
+    "items": [
+      {
+        "itemId": {{itemId}},
+        "itemName": "E2E Steel Rod",
+        "quantity": 10,
+        "unitPrice": 50,
+        "amount": 500
+      }
+    ]
+  }
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+script:post-response {
+  bru.test("Status is 200", () => {
+    expect(res.status).to.equal(200);
+  });
+  bru.setEnvVar("orderId", res.data.data.id);
+}

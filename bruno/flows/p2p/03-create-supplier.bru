@@ -1,0 +1,32 @@
+meta {
+  name: 03-创建供应商
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/suppliers
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "E2E Supplier",
+    "creditCode": "91110000MA002",
+    "contactName": "Jane Doe",
+    "contactPhone": "13800002222"
+  }
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+script:post-response {
+  bru.test("Status is 200", () => {
+    expect(res.status).to.equal(200);
+  });
+  bru.setEnvVar("supplierId", res.data.data.id);
+}

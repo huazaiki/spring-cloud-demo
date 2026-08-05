@@ -1,0 +1,29 @@
+meta {
+  name: 07-库存预留
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/v1/inventory/reserve
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "itemId": {{itemId}},
+    "quantity": 10
+  }
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+script:post-response {
+  bru.test("Status is 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}

@@ -1,0 +1,45 @@
+meta {
+  name: 创建应付账款
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/payments
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "orderId": {{orderId}},
+    "supplierId": {{supplierId}},
+    "amount": 5000
+  }
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+script:pre-request {
+  if (!bru.getEnvVar("token")) {
+    const res = await bru.request({
+      method: "POST",
+      url: bru.getEnvVar("baseUrl") + "/api/v1/auth/login",
+      body: JSON.stringify({"username": "admin", "password": "pass123"}),
+      headers: {"Content-Type": "application/json"}
+    });
+    bru.setEnvVar("token", res.data.data.token);
+  }
+}
+
+script:post-response {
+  bru.test("Status is 200", () => {
+    expect(res.status).to.equal(200);
+  });
+  bru.test("Response has payable id", () => {
+    expect(res.data.data.id).to.not.be.undefined;
+  });
+}

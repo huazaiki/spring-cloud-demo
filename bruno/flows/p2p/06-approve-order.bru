@@ -1,0 +1,21 @@
+meta {
+  name: 06-审批订单
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/api/v1/orders/{{orderId}}/approve
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+script:post-response {
+  bru.test("Status is 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}
