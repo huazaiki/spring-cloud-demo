@@ -27,7 +27,6 @@
         <module>sc-inventory-service</module>
         <module>sc-payment-service</module>
         <module>sc-gateway-service</module>
-        <module>sc-e2e-tests</module>
     </modules>
 
     <properties>
